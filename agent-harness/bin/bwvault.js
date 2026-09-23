@@ -61,7 +61,11 @@ ${out.color('GROUPS', 'bold')}
 
   ${out.color('credential', 'green')} Store service credentials by stable alias
     list      List aliases and metadata (never returns secrets)
+    get       Read one alias back by name (--reveal for the secret)
     set       Create or update an alias (secret via stdin/prompt/env)
+                --type login|note   note = Secure Note for cookie jars / JSON blobs
+                --field key=value   repeatable custom field (endpoints, scopes)
+                --notes "text"      note body for login entries
 
 ${out.color('GLOBAL OPTIONS', 'bold')}
   --json            Machine-readable output on stdout
@@ -80,6 +84,8 @@ ${out.color('EXAMPLES', 'bold')}
   bwvault analyze health
   bwvault manage dedup --dry-run
   printf '%s' "$SECRET" | bwvault credential set --alias nas.ssh --username tycon --url ssh://nas --apply
+  cat cookies.json | bwvault credential set --alias svc.cookies --type note --apply
+  bwvault credential get --alias svc.cookies --reveal --json | jq -r '.secret'
 `;
 
 /**
@@ -146,18 +152,23 @@ async function dispatchCredential(args, ctx) {
     alias: 'string',
     username: 'string',
     url: 'string',
+    type: 'string',
+    field: { type: 'string', multiple: true },
+    notes: 'string',
     apply: 'boolean',
   });
-  const common = { json: ctx.json, ...opts };
+  const common = { json: ctx.json, reveal: ctx.reveal, ...opts };
 
   switch (cmd) {
     case 'list':
       return credentialCmd.list(common);
+    case 'get':
+      return credentialCmd.get(common);
     case 'set':
       return credentialCmd.set(common);
     default:
       out.fail(`Unknown credential command: ${cmd}`);
-      process.stdout.write('Available: list, set\n');
+      process.stdout.write('Available: list, get, set\n');
       return 1;
   }
 }

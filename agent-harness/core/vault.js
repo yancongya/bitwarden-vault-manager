@@ -76,7 +76,7 @@ export function clientFromSession(currentSession) {
 }
 
 async function renewApiKeySession(current, client) {
-  const credentials = sessionStore.loadApiKeyCredentials(process.env.BWVAULT_PIN);
+  const credentials = sessionStore.loadApiKeyCredentials();
   if (!credentials?.clientId || !credentials?.clientSecret) return false;
   await client.loginWithApiKey(credentials.clientId, credentials.clientSecret);
   current.accessToken = client.accessToken;
@@ -180,10 +180,12 @@ export async function decryptCipher(c, key, folderMap = {}) {
 
   const customFields = [];
   for (const f of c.Fields || []) {
+    // The server keeps the cipher itself PascalCase but normalizes nested
+    // field keys to camelCase, so accept either spelling.
     customFields.push({
-      name: await d(f.Name),
-      value: await d(f.Value),
-      type: f.Type,
+      name: await d(f.name ?? f.Name),
+      value: await d(f.value ?? f.Value),
+      type: f.type ?? f.Type,
     });
   }
 
