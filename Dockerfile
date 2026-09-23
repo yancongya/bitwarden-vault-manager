@@ -56,6 +56,7 @@ ENV BWVAULT_HOME=/data/session \
 RUN mkdir -p /data/session && chown -R node:node /data /app
 
 COPY start.sh ./start.sh
+RUN chmod 0755 /app/start.sh
 USER node
 VOLUME ["/data"]
 EXPOSE 3000 3443

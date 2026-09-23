@@ -23,7 +23,6 @@ node bin/bwvault.js analyze health
 ```bash
 export BWVAULT_CLIENT_ID="user.xxxx-xxxx-xxxx"
 export BWVAULT_CLIENT_SECRET="xxxxx"
-export BWVAULT_PIN="your-pin"
 echo "$BWVAULT_PASSWORD" | node bin/bwvault.js auth login \
   --api-key \
   --email you@example.com

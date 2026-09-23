@@ -105,8 +105,7 @@ export async function loginApiKey(opts) {
     serverUrl,
     json: opts.json,
   });
-  const pin = opts.pin || process.env.BWVAULT_PIN;
-  if (pin) session.saveApiKeyCredentials({ clientId, clientSecret, email, serverUrl }, pin);
+  session.saveApiKeyCredentials({ clientId, clientSecret, email, serverUrl });
   return login;
 }
 

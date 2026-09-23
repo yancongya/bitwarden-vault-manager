@@ -251,7 +251,6 @@ printf '%s' "$SECRET" | ./bitwardenagents credential set \
 # API Key 登录（推荐自动化场景）
 export BWVAULT_CLIENT_ID="user.xxxx-xxxx-xxxx"
 export BWVAULT_CLIENT_SECRET="xxxxx"
-export BWVAULT_PIN="your-pin"
 echo "主密码" | node agent-harness/bin/bwvault.js auth login \
   --api-key --email you@example.com
 
@@ -426,7 +425,7 @@ bwvault manage dedup --json --apply
 | 变量 | 用途 |
 |------|------|
 | `BWVAULT_CLIENT_ID` / `BWVAULT_CLIENT_SECRET` | API Key 登录凭据 |
-| `BWVAULT_PIN` | 解锁本地加密的 API Key（容器重启后需一次） |
+| `BWVAULT_PIN` | Web 人工解锁 PIN；旧版 API Key 文件首次迁移时也会使用 |
 | `BWVAULT_PASSWORD` | 主密码（也可走 stdin） |
 | `BWVAULT_SECRET` | `credential set` 写入的服务凭据 |
 
