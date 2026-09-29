@@ -35,6 +35,44 @@ do not start a temporary container with a separate named volume.
 2. **All mutations default to dry-run**; pass `--apply` to commit.
 3. **Deletions are soft** (recoverable ~30 days); `purge` requires `--yes`.
 4. **Passwords are never arguments**; provide via stdin / env / prompt.
+5. **Production checks are read-only by default**; do not use `--apply`, purge,
+   destructive Docker commands, unlock flows, or load testing without explicit
+   user authorization.
+6. **Never expose session material**: access tokens, refresh tokens, symmetric
+   keys, API keys, PINs, and decrypted vault fields must not be printed, logged,
+   pasted into reports, or placed in argv.
+7. **Use the production proxy**: for NAS operations use `./bitwardenagents`,
+   which targets the existing `bwvault` container and `/data/session`. Never
+   start a separate named-volume vault to diagnose production.
+
+## Web session and deployment security
+
+- `/api/session` writes require a same-origin request. Do not weaken this check
+  to make automation easier.
+- PIN unlock is client-bound through a short-lived `HttpOnly`, `Secure`,
+  `SameSite=Strict` cookie. A process-global boolean is not an authorization
+  boundary.
+- Do not expose HTTP port 3000 to untrusted networks. Prefer HTTPS 3443 behind
+  a trusted reverse proxy and firewall 3000 to localhost or a management LAN.
+- New PIN records use scrypt and the web endpoint applies failure throttling;
+  preserve legacy verification compatibility when rotating PIN storage.
+- Static resource requests must remain inside the built `dist` directory after
+  URL decoding and normalization; never reintroduce direct path concatenation.
+- Compose production defaults use localhost-only HTTP, read-only rootfs, and
+  dropped Linux capabilities. Verify the deployed container matches them.
+- Treat `/data/session` as highly sensitive. It contains material that can
+  restore API access or decrypt cached vault data; preserve mode `0600` and the
+  existing NAS bind mount.
+- After changes to authentication, sessions, Docker, or deployment, run:
+
+  ```bash
+  npm run build
+  node agent-harness/tests/run.js
+  git diff --check
+  ```
+
+The current audit and remaining hardening work are recorded in
+`docs/security-report.md`. Update it after every security-affecting change.
 
 ## Command Reference
 

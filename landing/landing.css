@@ -1386,6 +1386,32 @@ h3 { line-height: 1.25; letter-spacing: -.02em; }
   border-bottom: 1px solid var(--border);
 }
 
+.security-report-section {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: clamp(44px, 8vw, 120px);
+  align-items: start;
+  padding-block: 132px;
+  border-top: 1px solid var(--border);
+}
+
+.security-report-copy { max-width: 560px; }
+.security-report-copy h2 { max-width: 11ch; }
+.security-report-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+}
+.report-status { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: .9rem; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent); }
+.report-findings { margin-top: 24px; border-top: 1px solid var(--border); }
+.report-finding { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 17px 0; border-bottom: 1px solid var(--border); }
+.report-finding > span { color: var(--faint); font-family: var(--mono); font-size: .75rem; }
+.report-finding strong { font-size: .92rem; font-weight: 650; }
+.report-finding em { color: var(--accent); font-size: .72rem; font-style: normal; font-family: var(--mono); }
+.report-note { margin: 20px 0 0; color: var(--muted); font-size: .82rem; }
+
 .command-copy {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1788,7 +1814,7 @@ footer {
   .site-header nav { display: none; }
   .hero { grid-template-columns: 1fr; min-height: auto; padding-block: 82px; }
   .hero-copy { max-width: 680px; }
-  .cli-section, .boundary-section { grid-template-columns: 1fr; }
+  .cli-section, .boundary-section, .security-report-section { grid-template-columns: 1fr; }
   .boundary-note { grid-column: 1; }
   .header-launch { display: none; }
   .vault-bridge { grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -1920,7 +1946,7 @@ footer {
   .rail-progress { display: none; }
   .gate { padding: 0 0 34px; }
   .gate::before { top: 5px; left: -28px; }
-  .cli-section, .boundary-section { gap: 42px; padding-block: 88px; }
+  .cli-section, .boundary-section, .security-report-section { gap: 42px; padding-block: 88px; }
   .theater-body { min-height: 260px; }
   .tl-kv { grid-template-columns: 132px 1fr; }
   .command-copy { grid-template-columns: 1fr; }

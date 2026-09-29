@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: bwvault
     ports:
-      - "3000:3000"    # HTTP (API proxy + session)
+      - "127.0.0.1:3000:3000"    # HTTP (local API proxy + session)
       - "3443:3443"    # HTTPS (Web Crypto enabled — use this for dashboard)
     volumes:
       - bwvault-data:/data
@@ -21,8 +21,10 @@ services:
       # - BWVAULT_PASSWORD=${BWVAULT_PASSWORD}
     security_opt:
       - no-new-privileges:true
-    read_only: false
+    read_only: true
     user: "1000:1000"
+    cap_drop:
+      - ALL
     tmpfs:
       - /tmp:size=10M
     restart: "no"

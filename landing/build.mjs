@@ -79,6 +79,7 @@ const html = `<!doctype html>
     <nav aria-label="Primary navigation">
       <a href="#safety" data-copy="nav.safety">${copy('nav.safety')}</a>
       <a href="#proof" data-copy="nav.proof">${copy('nav.proof')}</a>
+      <a href="#security-report" data-copy="nav.security">${copy('nav.security')}</a>
       <a href="${escapeHtml(data.site.sourceUrl)}" data-copy="nav.source">${copy('nav.source')}</a>
     </nav>
     <div class="header-actions">
@@ -103,6 +104,22 @@ const html = `<!doctype html>
         <div class="vault-window" id="vault-window" aria-label="${copy('hero.visualLabel')}"></div>
         <figcaption><span data-copy="hero.visualLabel">${copy('hero.visualLabel')}</span><small data-copy="hero.visualNote">${copy('hero.visualNote')}</small></figcaption>
       </figure>
+    </section>
+
+    <section class="security-report-section" id="security-report">
+      <div class="security-report-copy" data-reveal>
+        ${keyed('p', 'securityReport.eyebrow', 'class="eyebrow"')}
+        ${keyed('h2', 'securityReport.title')}
+        ${keyed('p', 'securityReport.lead')}
+        <a class="text-link" href="./security-report.md" data-copy="securityReport.link">${copy('securityReport.link')}</a>
+      </div>
+      <div class="security-report-panel" data-reveal>
+        <div class="report-status"><span class="status-dot"></span><strong data-copy="securityReport.status">${copy('securityReport.status')}</strong></div>
+        <div class="report-findings">
+          ${zh.securityReport.findings.map((item, index) => `<div class="report-finding"><span>${String(index + 1).padStart(2, '0')}</span><strong data-copy="securityReport.findings.${index}.title">${escapeHtml(item.title)}</strong><em data-copy="securityReport.findings.${index}.level">${escapeHtml(item.level)}</em></div>`).join('')}
+        </div>
+        <p class="report-note" data-copy="securityReport.note">${copy('securityReport.note')}</p>
+      </div>
     </section>
 
     <section class="vault-bridge-section" id="vault-native">
@@ -257,6 +274,7 @@ await cp(join(project, 'node_modules', 'gsap', 'dist', 'gsap.min.js'), join(out,
 await cp(join(project, 'node_modules', 'three', 'build', 'three.module.min.js'), join(out, 'assets', 'three.module.min.js'));
 await cp(join(project, 'node_modules', 'three', 'build', 'three.core.min.js'), join(out, 'assets', 'three.core.min.js'));
 await cp(join(project, 'public', 'llms.txt'), join(out, 'llms.txt'));
+await cp(join(project, 'docs', 'security-report.md'), join(out, 'security-report.md'));
 await cp(join(project, 'agent-harness', 'skills', 'SKILL.md'), join(out, 'skill.md'));
 await writeFile(join(out, 'landing-data.json'), JSON.stringify(data, null, 2) + '\n');
 

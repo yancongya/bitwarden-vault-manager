@@ -44,6 +44,7 @@
 - [CLI 命令参考](#cli-命令参考)
 - [Agent 接入](#agent-接入)
 - [架构与安全模型](#架构与安全模型)
+- [安全审核与运行边界](#安全审核与运行边界)
 - [部署选项](#部署选项)
 - [常见问题](#常见问题)
 - [参与贡献](#参与贡献)
@@ -224,8 +225,8 @@ printf '%s' "$SECRET" | ./bitwardenagents credential set \
 容器重启后先在 Web 输入一次 PIN。解锁完成后，代理命令直接复用线上
 `/data/session`，不需要重新输入账号、主密码或 API Key。
 
-> [!NOTE]
-> **浏览器 Web Crypto API 要求 HTTPS 或 localhost**。自托管时优先访问 `https://<your-host>:3443/`（自签证书，浏览器需手动信任一次）；纯 HTTP 端口 3000 仅供 API / CLI 使用。
+> [!WARNING]
+> **生产环境不要把 HTTP 3000 暴露给不可信网络。** 它仍会处理会话和 API 代理请求；自托管时优先使用 `https://<your-host>:3443/`，并在防火墙或反向代理层限制 3000 仅供本机或受信网络访问。
 
 <a id="一键部署到-nas"></a>
 
@@ -433,6 +434,30 @@ bwvault manage dedup --json --apply
 > 任何需要明文的操作都要求显式 `--reveal`。Agent 侧请在系统提示里禁止自动追加该 flag——脱敏输出已经足够做去重与健康判断。
 
 <p align="right">(<a href="#readme-top">回到顶部</a>)</p>
+
+<a id="安全审核与运行边界"></a>
+
+## 安全审核与运行边界
+
+项目已按 OWASP WSTG/ASVS、CIS Docker Benchmark 做过源码、容器和 NAS 线上只读审核，完整记录见 [安全审核报告](docs/security-report.md)。本轮已修复并复测：
+
+- `/api/session` 写入要求同源请求，跨源或无 `Origin` 请求会被拒绝。
+- PIN 解锁状态改为客户端绑定的短期 `HttpOnly`、`Secure`、`SameSite=Strict` cookie。
+- session 删除要求同源且已认证。
+
+生产上线验证已完成，后续维护建议：
+
+- 不向不可信网络暴露 HTTP 3000；
+- 定期验证 PIN 的 scrypt、失败退避和锁定在真实 HTTPS 入口生效；
+- 定期验证静态文件目录边界和异常 URL 行为；
+- 持续进行镜像漏洞扫描与实际容器 capability 检查。
+
+### 后续 Agent 必须遵守
+
+- 线上检查默认只读；不得执行 `--apply`、删除、purge、解锁或压力测试，除非用户明确授权。
+- 不使用 `--reveal`，除非用户明确指定具体操作和目标；输出中不得打印密码、API key、access token、PIN 或解密密钥。
+- NAS 只能使用仓库根目录的 `./bitwardenagents` 代理，不能另起带独立 named volume 的 `docker run`。
+- 修改会话、认证、Docker 或部署代码后，必须运行 `npm run build`、`node agent-harness/tests/run.js` 和 `git diff --check`，并更新安全报告。
 
 <a id="部署选项"></a>
 

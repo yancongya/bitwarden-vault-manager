@@ -14,6 +14,7 @@
     "nav": {
       "safety": "安全护栏",
       "proof": "真实能力",
+      "security": "安全报告",
       "source": "源码",
       "open": "打开密码库",
       "theme": "切换主题",
@@ -179,6 +180,20 @@
         "note": "元数据可见 · 秘密永不返回"
       }
     },
+    "securityReport": {
+      "eyebrow": "安全审计记录",
+      "title": "先公开问题，再公开修复结果。",
+      "lead": "我们按 OWASP WSTG/ASVS 与 CIS Docker Benchmark 做了源码、容器和 NAS 线上只读检查。本轮修复已部署到 NAS，并完成上线验证。",
+      "link": "阅读安全报告",
+      "status": "已部署 · 线上验证通过",
+      "note": "没有读取或展示真实秘密，也没有执行线上写操作。",
+      "findings": [
+        { "title": "会话写入已增加同源保护", "level": "已缓解" },
+        { "title": "解锁状态改为客户端绑定", "level": "已缓解" },
+        { "title": "HTTP 与容器加固已上线", "level": "已验证" },
+        { "title": "PIN 强 KDF 与限速已上线", "level": "已验证" }
+      ]
+    },
     "boundary": {
       "title": "明文停在本地",
       "lead": "浏览器完成密钥派生和密码库解密。代理只负责转发 Bitwarden 请求，不承担密码库明文存储。",
@@ -213,6 +228,7 @@
     "nav": {
       "safety": "Guardrails",
       "proof": "Real capability",
+      "security": "Security report",
       "source": "Source",
       "open": "Open vault",
       "theme": "Toggle theme",
@@ -377,6 +393,20 @@
         "masked": "●●●●●●●●",
         "note": "Metadata visible · secrets never returned"
       }
+    },
+    "securityReport": {
+      "eyebrow": "Security audit record",
+      "title": "Publish the findings before the finish line.",
+      "lead": "We reviewed the source, container, and NAS surface through OWASP WSTG/ASVS and the CIS Docker Benchmark. The fixes are deployed to the NAS and passed the production checks.",
+      "link": "Read security report",
+      "status": "Deployed · production verified",
+      "note": "No real secrets were read or displayed, and no production write operation was executed.",
+      "findings": [
+        { "title": "Session writes now require same-origin requests", "level": "Mitigated" },
+        { "title": "Unlock state is client-bound", "level": "Mitigated" },
+        { "title": "HTTP and container hardening are live", "level": "Verified" },
+        { "title": "PIN KDF and rate limiting are live", "level": "Verified" }
+      ]
     },
     "boundary": {
       "title": "Plaintext stops locally",

@@ -40,15 +40,14 @@ export function getDeviceIdentifier() {
 }
 
 /**
- * Set a Web access PIN. The PIN is stored as a salted SHA-256 hash — the raw
- * PIN is never written to disk. This prevents anyone with file access from
- * trivially reading it.
+ * Set a Web access PIN. New PINs use scrypt with a per-record salt. Legacy
+ * SHA-256 records remain verifiable so an upgrade does not lock users out.
  */
 export async function setPin(pin) {
   ensureDir();
-  const salt = crypto.randomUUID();
-  const hash = await sha256(salt + pin);
-  const payload = { hash, salt, setAt: Date.now() };
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(String(pin), salt, 32, { N: 1 << 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+  const payload = { hash: hash.toString('base64'), salt: salt.toString('base64'), kdf: 'scrypt', setAt: Date.now() };
   const fd = fs.openSync(PIN_FILE, 'w', 0o600);
   try {
     fs.writeFileSync(fd, JSON.stringify(payload));
@@ -65,7 +64,11 @@ export async function setPin(pin) {
 export async function verifyPin(pin) {
   if (!fs.existsSync(PIN_FILE)) return false;
   try {
-    const { hash, salt } = JSON.parse(fs.readFileSync(PIN_FILE, 'utf8'));
+    const { hash, salt, kdf } = JSON.parse(fs.readFileSync(PIN_FILE, 'utf8'));
+    if (kdf === 'scrypt') {
+      const actual = crypto.scryptSync(String(pin), Buffer.from(salt, 'base64'), 32, { N: 1 << 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+      return crypto.timingSafeEqual(actual, Buffer.from(hash, 'base64'));
+    }
     return (await sha256(salt + pin)) === hash;
   } catch {
     return false;

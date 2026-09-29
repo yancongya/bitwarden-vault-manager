@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { migrateApiKeyCredentials } from './agent-harness/core/session.js';
+import { migrateApiKeyCredentials, verifyPin } from './agent-harness/core/session.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, 'dist');
@@ -22,6 +22,43 @@ const SYNC_CACHE_FILE = path.join(SESSION_DIR, 'sync-cache.json');
 const SYNC_CACHE_MAX_AGE = 10 * 60 * 1000;
 
 let unlockedApiKeyCredentials = null;
+const unlockedClients = new Map();
+const UNLOCK_TTL_MS = 15 * 60 * 1000;
+const pinFailures = new Map();
+const PIN_MAX_FAILURES = 5;
+const PIN_WINDOW_MS = 60 * 1000;
+
+function getUnlockToken(req) {
+  const match = String(req.headers.cookie || '').match(/(?:^|;\s*)bwvault_unlock=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+function hasClientUnlock(req) {
+  const token = getUnlockToken(req);
+  if (!token) return false;
+  const expiresAt = unlockedClients.get(token);
+  if (!expiresAt || expiresAt < Date.now()) {
+    unlockedClients.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function sameOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return false;
+  try {
+    const expectedProtocol = req.socket.encrypted ? 'https:' : 'http:';
+    const parsed = new URL(origin);
+    return parsed.host === req.headers.host && parsed.protocol === expectedProtocol;
+  } catch {
+    return false;
+  }
+}
+
+function clientAddress(req) {
+  return req.socket.remoteAddress || 'unknown';
+}
 
 async function renewApiKeySession(session, pin) {
   if (!fs.existsSync(API_KEY_FILE)) return session;
@@ -161,20 +198,34 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({ ok: false, error: 'PIN not set. Run: bwvault auth login --set-pin <pin>' }));
           return;
         }
-        const { hash, salt } = JSON.parse(fs.readFileSync(pinFile, 'utf8'));
-        const inputHash = crypto.createHash('sha256').update(salt + pin).digest('hex');
-        if (inputHash !== hash) {
+        const address = clientAddress(req);
+        const failure = pinFailures.get(address);
+        if (failure && failure.blockedUntil > Date.now()) {
+          res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(Math.ceil((failure.blockedUntil - Date.now()) / 1000)) });
+          res.end(JSON.stringify({ ok: false, error: 'Too many PIN attempts. Try again later.' }));
+          return;
+        }
+        if (!await verifyPin(pin)) {
+          const next = failure && failure.expiresAt > Date.now() ? failure.count + 1 : 1;
+          pinFailures.set(address, { count: next, expiresAt: Date.now() + PIN_WINDOW_MS, blockedUntil: next >= PIN_MAX_FAILURES ? Date.now() + PIN_WINDOW_MS : 0 });
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, error: 'Invalid PIN' }));
           return;
         }
+        pinFailures.delete(address);
         // PIN correct — return session
         if (fs.existsSync(SESSION_FILE)) {
           let session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
           // API-key access tokens do not include refresh tokens. A valid PIN
           // authorizes a transparent re-login using credentials in /data.
           session = await renewApiKeySession(session, pin);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          const unlockToken = crypto.randomBytes(32).toString('base64url');
+          unlockedClients.set(unlockToken, Date.now() + UNLOCK_TTL_MS);
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Set-Cookie': `bwvault_unlock=${unlockToken}; Path=/api; HttpOnly; Secure; SameSite=Strict; Max-Age=${UNLOCK_TTL_MS / 1000}`,
+            'Cache-Control': 'no-store',
+          });
           res.end(JSON.stringify({ ok: true, session }));
         } else {
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -195,19 +246,28 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       ok: true,
       pinSet: fs.existsSync(pinFile),
-      unlocked: Boolean(unlockedApiKeyCredentials),
+      unlocked: hasClientUnlock(req),
     }));
     return;
   }
 
   // POST /api/session — save session from Web UI
   if (req.method === 'POST' && urlObj.pathname === '/api/session') {
+    const pinFile = path.join(path.dirname(SESSION_FILE), 'pin.json');
+    if (!sameOrigin(req) || (fs.existsSync(pinFile) && !hasClientUnlock(req))) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Same-origin request required.' }));
+      return;
+    }
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
       try {
         const session = JSON.parse(body);
         fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
+        if (!session || typeof session !== 'object' || typeof session.serverUrl !== 'string' || typeof session.accessToken !== 'string') {
+          throw new Error('Invalid session payload.');
+        }
         fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2), { mode: 0o600 });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
@@ -223,14 +283,19 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && urlObj.pathname === '/api/session') {
     try {
       const pinFile = path.join(path.dirname(SESSION_FILE), 'pin.json');
-      if (fs.existsSync(pinFile) && !unlockedApiKeyCredentials) {
+      if (!fs.existsSync(pinFile)) {
+        res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ ok: false, error: 'PIN unlock is required before session restore.' }));
+        return;
+      }
+      if (!hasClientUnlock(req)) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: false, error: 'PIN unlock required.' }));
         return;
       }
       if (fs.existsSync(SESSION_FILE)) {
         const data = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, session: data }));
       } else {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -245,8 +310,15 @@ const server = http.createServer((req, res) => {
 
   // DELETE /api/session — clear session
   if (req.method === 'DELETE' && urlObj.pathname === '/api/session') {
+    if (!sameOrigin(req) || !hasClientUnlock(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Authenticated same-origin request required.' }));
+      return;
+    }
     try {
       if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE);
+      unlockedClients.clear();
+      unlockedApiKeyCredentials = null;
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
     } catch (e) {
@@ -264,7 +336,21 @@ const server = http.createServer((req, res) => {
   }
 
   // Static file serving
-  let filePath = path.join(DIST, req.url === '/' ? 'index.html' : req.url);
+  let requestedPath;
+  try {
+    requestedPath = decodeURIComponent((req.url || '/').split('?')[0]);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Invalid path');
+    return;
+  }
+  let filePath = path.resolve(DIST, requestedPath === '/' ? 'index.html' : `.${requestedPath}`);
+  const distPrefix = `${path.resolve(DIST)}${path.sep}`;
+  if (filePath !== path.resolve(DIST, 'index.html') && !filePath.startsWith(distPrefix)) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Invalid path');
+    return;
+  }
 
   // If no extension, try index.html (SPA fallback)
   if (!path.extname(filePath)) {
