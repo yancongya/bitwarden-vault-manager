@@ -222,8 +222,8 @@ printf '%s' "$SECRET" | ./bitwardenagents credential set \
   --alias service.token --username agent --url https://service.example --apply --json
 ```
 
-容器重启后先在 Web 输入一次 PIN。解锁完成后，代理命令直接复用线上
-`/data/session`，不需要重新输入账号、主密码或 API Key。
+容器重启后，代理命令继续复用线上 `/data/session`。新版 API Key 凭据由持久
+`agent-key` 保护，可自动续期；只有旧版凭据首次迁移可能需要在私密终端输入 PIN。
 
 > [!WARNING]
 > **生产环境不要把 HTTP 3000 暴露给不可信网络。** 它仍会处理会话和 API 代理请求；自托管时优先使用 `https://<your-host>:3443/`，并在防火墙或反向代理层限制 3000 仅供本机或受信网络访问。
@@ -311,7 +311,7 @@ bitwardenagents/
 - **Digest 去重**：重复检测基于 SHA-256 摘要，不在共享数据结构中持明文。
 - **Soft delete**：所有删除可恢复（~30 天），仅 `manage trash purge --id <id> --apply --yes` 不可逆。
 - **会话文件**：只存派生后的对称密钥，权限 `0600`。
-- **API Key 加密**：`bwvault` 的 API Key 由用户设置的 PIN 经 scrypt 派生密钥后以 AES-256-GCM 加密保存；容器/进程重启后只需输入一次 PIN 即可透明续期会话。
+- **API Key 加密**：新版 API Key 凭据由持久的 `agent-key` 加密保存，容器/进程重启后可自动续期；旧版 PIN 加密文件首次迁移时才需要在私密终端输入 PIN。
 - **磁盘缓存**：CLI 只缓存 Bitwarden 的加密响应，不缓存解密后的密码库。
 
 <p align="right">(<a href="#readme-top">回到顶部</a>)</p>
@@ -403,7 +403,9 @@ node bin/bwvault.js manage dedup --json      | jq '.summary'
 | 写操作默认 dry-run | 必须显式 `--apply` 才落库 | Agent 可以先演练再提交 |
 | 删除一律软删除 | 回收站保留 ~30 天 | 误操作可回滚；仅 `purge --yes` 不可逆 |
 
-**让 Agent 发现这个工具**：仓库自带 `agent-harness/skills/SKILL.md`（`name: cli-anything-bwvault`），声明了触发词（bitwarden / vault manager / password health / duplicate passwords…）与安全规则。把该文件所在目录加入你的 Agent 技能路径即可自动识别。
+**让 Agent 发现这个工具**：仓库自带 `agent-harness/skills/SKILL.md`（`name: bwvault-cli`），记录了全局 CLI 入口、凭据安全规则和 NAS 持久会话机制。项目仓库维护源文件；全局分发只由 SkillDo 管理一份中央副本，其他 Agent 工具目录使用软链。
+
+Docker/NAS、CLI/SkillDo 和可选 macOS App 的交付边界见 [统一交付流程](docs/distribution-workflow.md)。
 
 **典型 Agent 工作流**
 

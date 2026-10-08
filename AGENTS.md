@@ -35,13 +35,10 @@ hood:
 Both are equivalent. Prefer the direct SSH template when you are not in this
 repo's working directory.
 
-### Output filtering
+### Output handling
 
-All CLI output may contain `decrypting N/707` progress lines. Always filter:
-
-```bash
-... 2>&1 | tr '\r' '\n' | grep -vE 'decrypting'
-```
+Do not merge stdout and stderr when consuming JSON. Keep progress messages on
+stderr and parse only stdout. Never print output from `--reveal` in a chat or log.
 
 ## CLI command reference
 
@@ -102,10 +99,11 @@ Never pass it as a CLI argument.**
 
 ## Authentication lifecycle
 
-- A container restart intentionally locks encrypted bootstrap credentials.
-- Ask the user to unlock once through the HTTPS Web UI PIN page or use the
-  unlock API. Do not request the Bitwarden account password or API Key when the
-  persisted session exists.
+- Current API-key credentials use the persistent `/data/session/agent-key` and
+  renew automatically after expiry or container restart. Only legacy version 1
+  credentials may require a one-time PIN migration in a private terminal.
+- Check `bwvault auth status --json` first. After a `401`, retry once and inspect
+  the actual error and credential version before recommending any login action.
 - `authenticated: true` plus `/data/session/session.json` mode `600` is evidence
   of a stored session. A failed operation must report its actual error before
   recommending re-login.
@@ -113,18 +111,6 @@ Never pass it as a CLI argument.**
   local cache and do NOT require an active API session.
 - **Write operations** (set, dedup, trash purge) require a valid Bitwarden API
   session. If they return `createCipher FAILED: 401`, the session has expired.
-
-### Quick unlock (no browser needed)
-
-```bash
-ssh tycon@192.168.31.110 \
-  "curl -sk -X POST https://127.0.0.1:3443/api/session/verify \
-    -H 'Content-Type: application/json' \
-    -d '{\"pin\":\"<PIN>\"}'"
-```
-
-Replace `<PIN>` with the Web access PIN. This refreshes the session so write
-operations work again.
 
 ## Secret handling
 

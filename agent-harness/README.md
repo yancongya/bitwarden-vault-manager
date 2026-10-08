@@ -92,9 +92,9 @@ node bin/bwvault.js credential list --json
 - **Session file**: the derived symmetric key (needed for decryption) is stored
   with `chmod 0600` in `~/.bwvault/session.json`. The master password is never
   written.
-- **API-key bootstrap**: persisted API credentials are encrypted with
-  scrypt + AES-256-GCM under the PIN. After a container/process restart, enter
-  the PIN once before automatic session renewal can run.
+- **API-key bootstrap**: current API credentials are encrypted with the
+  persistent agent key and can renew after a container/process restart. Only a
+  legacy version 1 credential file may require a one-time private PIN migration.
 - **All deletions are soft**: recoverable from trash for ~30 days. Only
   `trash purge --id <id> --apply --yes` is irreversible.
 - **Credential aliases**: `credential set` reads the secret from stdin, a
