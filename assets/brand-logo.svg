@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Bitwardenagents</title>
+  <desc id="desc">A terminal prompt connected to an orbit of agent nodes.</desc>
+  <style>
+    .node-a { fill: #2563eb; }
+    .node-b { fill: #06b6d4; }
+    .links { stroke: #60a5fa; }
+    .core { fill: #082f5b; stroke: #2563eb; }
+    @media (prefers-color-scheme: dark) {
+      .links { stroke: #38bdf8; }
+      .core { fill: #0b2d52; stroke: #3b82f6; }
+    }
+  </style>
+  <g class="orbit">
+    <circle cx="32" cy="32" r="25" fill="none" stroke="#38bdf8" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="4 5" opacity=".75"/>
+    <g class="links" fill="none" stroke-width="2" stroke-linecap="round">
+      <path d="M32 17V9M42.6 21.4l5.7-5.7M47 32h8M42.6 42.6l5.7 5.7M32 47v8M21.4 42.6l-5.7 5.7M17 32H9M21.4 21.4l-5.7-5.7"/>
+    </g>
+    <g>
+      <circle class="node-a" cx="32" cy="7" r="3.5"/>
+      <circle class="node-b" cx="49.7" cy="14.3" r="3.5"/>
+      <circle class="node-a" cx="57" cy="32" r="3.5"/>
+      <circle class="node-b" cx="49.7" cy="49.7" r="3.5"/>
+      <circle class="node-a" cx="32" cy="57" r="3.5"/>
+      <circle class="node-b" cx="14.3" cy="49.7" r="3.5"/>
+      <circle class="node-a" cx="7" cy="32" r="3.5"/>
+      <circle class="node-b" cx="14.3" cy="14.3" r="3.5"/>
+    </g>
+  </g>
+  <circle class="core" cx="32" cy="32" r="15" stroke-width="2"/>
+  <g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m24.5 25.5 6.5 6.5-6.5 6.5"/>
+    <path class="cursor" d="M34.5 38.5h6"/>
+  </g>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Bitwardenagents loading</title>
+  <desc id="desc">Agent nodes connect to a terminal vault core and settle into the Bitwardenagents logo.</desc>
+  <style>
+    .orbit-line,.link,.core-ring,.prompt,.cursor { vector-effect: non-scaling-stroke; }
+    .orbit-line { stroke-dasharray: 4 5; stroke-dashoffset: 38; animation: orbit-in .62s cubic-bezier(.22,1,.36,1) .08s forwards; }
+    .link { stroke-dasharray: 9; stroke-dashoffset: 9; animation: line-in .3s ease-out forwards; }
+    .node { opacity: 0; transform-box: fill-box; transform-origin: center; animation: node-in .34s cubic-bezier(.2,1.7,.35,1) forwards; }
+    .core-ring { opacity: 0; transform-box: fill-box; transform-origin: center; animation: core-in .38s cubic-bezier(.22,1,.36,1) .62s forwards; }
+    .prompt { stroke-dasharray: 19; stroke-dashoffset: 19; animation: prompt-in .28s ease-out .78s forwards; }
+    .cursor { opacity: 0; animation: cursor-in .36s steps(1,end) 1s 3, cursor-settle .01s linear 2.08s forwards; }
+    .pulse { opacity: 0; transform-box: fill-box; transform-origin: center; animation: pulse-out .48s ease-out 1.02s forwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .14s; }
+    .d3 { animation-delay: .20s; } .d4 { animation-delay: .26s; }
+    .d5 { animation-delay: .32s; } .d6 { animation-delay: .38s; }
+    .d7 { animation-delay: .44s; } .d8 { animation-delay: .50s; }
+    .l1 { animation-delay: .20s; } .l2 { animation-delay: .26s; }
+    .l3 { animation-delay: .32s; } .l4 { animation-delay: .38s; }
+    .l5 { animation-delay: .44s; } .l6 { animation-delay: .50s; }
+    .l7 { animation-delay: .56s; } .l8 { animation-delay: .62s; }
+    @keyframes orbit-in { to { stroke-dashoffset: 0; } }
+    @keyframes line-in { to { stroke-dashoffset: 0; } }
+    @keyframes node-in { from { opacity: 0; transform: scale(.25); } to { opacity: 1; transform: scale(1); } }
+    @keyframes core-in { from { opacity: 0; transform: scale(.68) rotate(-22deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+    @keyframes prompt-in { to { stroke-dashoffset: 0; } }
+    @keyframes cursor-in { 0%,49% { opacity: 1; } 50%,100% { opacity: .12; } }
+    @keyframes cursor-settle { to { opacity: 1; } }
+    @keyframes pulse-out { 0% { opacity: .6; transform: scale(.72); } 100% { opacity: 0; transform: scale(1.65); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .orbit-line,.link,.prompt { stroke-dashoffset: 0; }
+      .node,.core-ring,.cursor { opacity: 1; transform: none; }
+      .pulse { display: none; }
+    }
+  </style>
+  <circle class="orbit-line" cx="32" cy="32" r="25" fill="none" stroke="#38bdf8" stroke-width="1.75" stroke-linecap="round" opacity=".75"/>
+  <g fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round">
+    <path class="link l1" d="M32 17V9"/><path class="link l2" d="M42.6 21.4l5.7-5.7"/>
+    <path class="link l3" d="M47 32h8"/><path class="link l4" d="M42.6 42.6l5.7 5.7"/>
+    <path class="link l5" d="M32 47v8"/><path class="link l6" d="M21.4 42.6l-5.7 5.7"/>
+    <path class="link l7" d="M17 32H9"/><path class="link l8" d="M21.4 21.4l-5.7-5.7"/>
+  </g>
+  <g>
+    <circle class="node d1" cx="32" cy="7" r="3.5" fill="#2563eb"/><circle class="node d2" cx="49.7" cy="14.3" r="3.5" fill="#06b6d4"/>
+    <circle class="node d3" cx="57" cy="32" r="3.5" fill="#2563eb"/><circle class="node d4" cx="49.7" cy="49.7" r="3.5" fill="#06b6d4"/>
+    <circle class="node d5" cx="32" cy="57" r="3.5" fill="#2563eb"/><circle class="node d6" cx="14.3" cy="49.7" r="3.5" fill="#06b6d4"/>
+    <circle class="node d7" cx="7" cy="32" r="3.5" fill="#2563eb"/><circle class="node d8" cx="14.3" cy="14.3" r="3.5" fill="#06b6d4"/>
+  </g>
+  <circle class="pulse" cx="32" cy="32" r="15" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+  <circle class="core-ring" cx="32" cy="32" r="15" fill="#082f5b" stroke="#2563eb" stroke-width="2"/>
+  <g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path class="prompt" d="m24.5 25.5 6.5 6.5-6.5 6.5"/>
+    <path class="cursor" d="M34.5 38.5h6"/>
+  </g>
+</svg>

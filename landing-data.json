@@ -1,0 +1,1039 @@
+{
+  "site": {
+    "name": "Bitwardenagents",
+    "canonical": "https://bitwardenagents.itycon.cn/",
+    "productUrl": "https://bitwardenagents.itycon.cn/dev/",
+    "sourceUrl": "https://github.com/yancongya/bitwardenagents",
+    "readmeUrl": "https://github.com/yancongya/bitwardenagents#readme"
+  },
+  "zh": {
+    "meta": {
+      "title": "Bitwardenagents | 让 Agent 安全整理 Bitwarden",
+      "description": "用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。"
+    },
+    "nav": {
+      "safety": "安全护栏",
+      "proof": "真实能力",
+      "security": "安全报告",
+      "source": "源码",
+      "open": "打开密码库",
+      "theme": "切换主题",
+      "language": "切换语言"
+    },
+    "hero": {
+      "eyebrow": "为 Agent 设计的 Bitwarden 工具",
+      "title": "Agent 整理密码，明文留在本地。",
+      "lead": "默认脱敏、先预演、再确认。把重复项、健康检查和基础设施凭据交给自动化，控制权仍在你手里。",
+      "primary": "打开密码库",
+      "secondary": "查看源码",
+      "visualLabel": "实时演示面板",
+      "visualNote": "合成数据 · 未连接真实账户"
+    },
+    "heroWindow": {
+      "windowTitle": "bwvault / demo",
+      "demoBadge": "合成数据",
+      "sidebarTitle": "文件夹",
+      "folders": [
+        {
+          "name": "开发工具",
+          "count": 96
+        },
+        {
+          "name": "云服务",
+          "count": 54
+        },
+        {
+          "name": "社交媒体",
+          "count": 88
+        },
+        {
+          "name": "金融理财",
+          "count": 31
+        },
+        {
+          "name": "工作相关",
+          "count": 43
+        }
+      ],
+      "healthLabel": "健康分",
+      "healthCmd": "analyze health",
+      "itemsLabel": "条目",
+      "items": [
+        {
+          "site": "GitHub",
+          "user": "boss@itycon.cn",
+          "flag": "dupe"
+        },
+        {
+          "site": "Cloudflare",
+          "user": "ops@itycon.cn",
+          "flag": null
+        },
+        {
+          "site": "AWS Console",
+          "user": "root@itycon.cn",
+          "flag": "weak"
+        },
+        {
+          "site": "GitHub",
+          "user": "boss@itycon.cn",
+          "flag": "dupe"
+        },
+        {
+          "site": "微信",
+          "user": "138****8890",
+          "flag": null
+        },
+        {
+          "site": "Google Cloud",
+          "user": "dev@itycon.cn",
+          "flag": "reuse"
+        },
+        {
+          "site": "知乎",
+          "user": "boss@itycon.cn",
+          "flag": null
+        }
+      ],
+      "flags": {
+        "dupe": "重复",
+        "weak": "弱密码",
+        "reuse": "复用"
+      },
+      "scanScanning": "Agent 扫描中…",
+      "scanFound": "发现 2 个重复项",
+      "scanReady": "预演完成 · 等待你确认",
+      "scanMerged": "已合并 1 条 · 可从回收站恢复",
+      "maskNote": "密码保持脱敏"
+    },
+    "vaultBridge": {
+      "title": "一个密码库，人和 Agent 都能用",
+      "lead": "登录凭据、支付卡、身份信息、安全笔记和 SSH 密钥继续保存在 Bitwarden。Bitwardenagents 增加自托管 Web、Docker 与 CLI，不必再到处复制、粘贴和另存一份。",
+      "nativeLabel": "Bitwarden 原生项目",
+      "vaultLabel": "同一座加密密码库",
+      "accessLabel": "Bitwardenagents 访问层",
+      "synthetic": "演示数据",
+      "encrypted": "已加密",
+      "localNote": "原始数据留在 Bitwarden，Agent 默认只获得脱敏结果。",
+      "stageHint": "选择一种内容和一个入口，亲手跑一次安全路由",
+      "routeAction": "运行路由",
+      "routeReady": "已选择：{type} → {interface}",
+      "routeRunning": "正在加密转交…",
+      "routeDone": "{type} 已通过 {interface} 返回脱敏结果",
+      "types": [
+        {
+          "id": "login",
+          "index": "01",
+          "name": "登录凭据",
+          "detail": "用户名、密码、URI、TOTP 与通行密钥",
+          "sample": [
+            "account",
+            "ops@itycon.cn",
+            "password",
+            "••••••••",
+            "totp",
+            "••••••"
+          ]
+        },
+        {
+          "id": "card",
+          "index": "02",
+          "name": "支付卡",
+          "detail": "持卡人、卡号、有效期与安全码",
+          "sample": [
+            "holder",
+            "T. Yan",
+            "number",
+            "•••• 4242",
+            "cvv",
+            "•••"
+          ]
+        },
+        {
+          "id": "identity",
+          "index": "03",
+          "name": "身份信息",
+          "detail": "姓名、地址、联系方式与证件字段",
+          "sample": [
+            "name",
+            "T. Yan",
+            "address",
+            "••••••••",
+            "id",
+            "••••••"
+          ]
+        },
+        {
+          "id": "note",
+          "index": "04",
+          "name": "安全笔记",
+          "detail": "恢复码、授权信息和私密文本",
+          "sample": [
+            "title",
+            "Recovery codes",
+            "content",
+            "••••••••",
+            "status",
+            "stored"
+          ]
+        },
+        {
+          "id": "ssh",
+          "index": "05",
+          "name": "SSH 密钥",
+          "detail": "私钥、公钥与指纹",
+          "sample": [
+            "host",
+            "nas.local",
+            "private",
+            "••••••••",
+            "fingerprint",
+            "SHA256:••••"
+          ]
+        }
+      ],
+      "interfaces": [
+        {
+          "id": "web",
+          "name": "Web",
+          "detail": "在浏览器中查看、整理与编辑原生项目。",
+          "command": "打开 /dev/ 管理面板",
+          "result": "五类项目统一浏览"
+        },
+        {
+          "id": "docker",
+          "name": "Docker",
+          "detail": "在 NAS 持久化会话，容器重启后使用 PIN 解锁。",
+          "command": "BWVAULT_HOME=/data/session",
+          "result": "session  persisted"
+        },
+        {
+          "id": "agent",
+          "name": "Agent CLI",
+          "detail": "Agent 使用稳定别名和机器可读输出，秘密默认不返回。",
+          "command": "bwvault credential list --json",
+          "result": "cloudflare.itycon.dns  stored  masked"
+        }
+      ]
+    },
+    "guardrails": {
+      "title": "一次操作，要过四道护栏",
+      "lead": "这不是安全口号。下面这台终端在跑真实命令，四道护栏随执行依次点亮。",
+      "steps": [
+        {
+          "state": "INPUT",
+          "title": "密钥不进 argv",
+          "body": "密码只从 stdin、隐藏输入或受控环境变量进入。"
+        },
+        {
+          "state": "MASKED",
+          "title": "输出默认脱敏",
+          "body": "密码、TOTP、卡号和私钥在普通输出中保持遮蔽。"
+        },
+        {
+          "state": "DRY RUN",
+          "title": "写操作先预演",
+          "body": "没有显式 --apply，管理命令只返回计划。"
+        },
+        {
+          "state": "RECOVERABLE",
+          "title": "删除默认可恢复",
+          "body": "普通删除进入回收站，永久清除需要额外确认。"
+        }
+      ]
+    },
+    "theater": {
+      "replay": "重跑",
+      "applyOn": "演示确认 --apply",
+      "applyOff": "返回预演",
+      "modeDry": "预演模式",
+      "modeApply": "执行模式",
+      "gateHint": "点击任意护栏可重放",
+      "dry": [
+        {
+          "t": "cmd",
+          "text": "bwvault manage dedup --dry-run"
+        },
+        {
+          "t": "bar",
+          "label": "decrypting",
+          "max": 312
+        },
+        {
+          "t": "out",
+          "text": "✓ decrypted locally / secrets never enter argv",
+          "cls": "ok",
+          "gate": 0
+        },
+        {
+          "t": "out",
+          "text": "Dry run: 3 duplicate groups, 5 items would be soft-deleted.",
+          "gate": 2
+        },
+        {
+          "t": "out",
+          "text": "Re-run with --apply to execute.",
+          "cls": "dim"
+        },
+        {
+          "t": "kv",
+          "rows": [
+            [
+              "Mode",
+              "dry-run (no changes made)"
+            ],
+            [
+              "Duplicate groups",
+              "3"
+            ],
+            [
+              "Items to soft-delete",
+              "5"
+            ]
+          ],
+          "gate": 1
+        },
+        {
+          "t": "out",
+          "text": "keep    GitHub / boss@itycon.cn",
+          "cls": "ok"
+        },
+        {
+          "t": "out",
+          "text": "remove  GitHub (2021-06-13) / soft-delete → trash",
+          "cls": "warn",
+          "gate": 3
+        }
+      ],
+      "apply": [
+        {
+          "t": "cmd",
+          "text": "bwvault manage dedup --apply"
+        },
+        {
+          "t": "out",
+          "text": "confirm: 5 items will be soft-deleted [y/N]",
+          "cls": "dim"
+        },
+        {
+          "t": "key",
+          "text": "y"
+        },
+        {
+          "t": "bar",
+          "label": "soft-deleting",
+          "max": 5
+        },
+        {
+          "t": "out",
+          "text": "✓ Soft-deleted 5 duplicate items. Recoverable from trash.",
+          "cls": "ok",
+          "gate": 3
+        }
+      ]
+    },
+    "cli": {
+      "title": "Web 管理，CLI 执行",
+      "lead": "同一套加密实现服务浏览器和命令行，Agent 得到机器可读结果，你保留明确的披露边界。",
+      "command": "node agent-harness/bin/bwvault.js --help",
+      "copy": "复制命令",
+      "copied": "已复制",
+      "playgroundHint": "点击命令组，查看真实 --help 输出",
+      "runs": {
+        "auth": [
+          "login     Sign in (--api-key | --password)",
+          "logout    Clear the stored session",
+          "status    Show session info (never prints secrets)"
+        ],
+        "vault": [
+          "sync      Pull the latest vault from the server",
+          "list      List entries (secrets redacted unless --reveal)",
+          "search    Search entries by name/username/URI",
+          "get       Show one entry in full (redacted unless --reveal)",
+          "folders   List folders"
+        ],
+        "analyze": [
+          "health      Weak / empty / reused / stale passwords",
+          "duplicates  Duplicate and same-site clusters",
+          "urls        Dead-link candidates"
+        ],
+        "manage": [
+          "dedup     Merge duplicate entries (soft-delete, recoverable)",
+          "trash     list | restore | purge  (purge is irreversible)",
+          "folders   create | rename | delete"
+        ],
+        "credential": [
+          "list      List aliases and metadata (never returns secrets)",
+          "set       Create or update an alias (secret via stdin/prompt/env)"
+        ]
+      },
+      "groups": [
+        {
+          "name": "auth",
+          "description": "Authenticate and manage the local session"
+        },
+        {
+          "name": "vault",
+          "description": "Inspect and move data"
+        },
+        {
+          "name": "analyze",
+          "description": "Read-only reporting (no vault mutation)"
+        },
+        {
+          "name": "manage",
+          "description": "Mutating operations (all support --dry-run)"
+        },
+        {
+          "name": "credential",
+          "description": "Store service credentials by stable alias"
+        }
+      ]
+    },
+    "product": {
+      "title": "先看交互式演示，再决定是否连接",
+      "lead": "演示模式沿用产品本身的渲染与分析流程。数据是合成的，交互不是截图摆设。",
+      "imageAlt": "Bitwardenagents 演示模式总览，显示健康分析和密码库整理入口",
+      "items": [
+        {
+          "title": "健康优先级",
+          "body": "定位弱密码、复用、过期和缺失信息。"
+        },
+        {
+          "title": "重复项整理",
+          "body": "先比较差异，再选择可恢复的清理路径。"
+        },
+        {
+          "title": "稳定凭据别名",
+          "body": "Agent 用名称引用服务凭据，不必反复搜索和粘贴。"
+        }
+      ],
+      "cta": "进入演示入口",
+      "panelBadge": "合成数据",
+      "healthBars": [
+        {
+          "label": "弱密码",
+          "value": 14
+        },
+        {
+          "label": "复用密码",
+          "value": 9
+        },
+        {
+          "label": "过期凭据",
+          "value": 5
+        },
+        {
+          "label": "信息缺失",
+          "value": 7
+        }
+      ],
+      "healthCmd": "analyze health",
+      "dedupe": {
+        "cardA": "GitHub · boss@itycon.cn",
+        "cardB": "GitHub · 副本（2021-06 创建）",
+        "keep": "保留",
+        "merge": "合并 · 软删除",
+        "result": "B → 回收站 · 可恢复"
+      },
+      "dedupeCmd": "manage dedup",
+      "alias": {
+        "cmd": "bwvault credential list",
+        "rows": [
+          [
+            "cloudflare.dns.token",
+            "ops@itycon.cn",
+            "api.cloudflare.com"
+          ],
+          [
+            "github.ci",
+            "boss@itycon.cn",
+            "github.com"
+          ],
+          [
+            "nas.ssh",
+            "tycon",
+            "ssh://nas"
+          ]
+        ],
+        "masked": "●●●●●●●●",
+        "note": "元数据可见 · 秘密永不返回"
+      }
+    },
+    "securityReport": {
+      "eyebrow": "安全审计记录",
+      "title": "先公开问题，再公开修复结果。",
+      "lead": "我们按 OWASP WSTG/ASVS 与 CIS Docker Benchmark 做了源码、容器和 NAS 线上只读检查。本轮修复已部署到 NAS，并完成上线验证。",
+      "link": "阅读安全报告",
+      "status": "已部署 · 线上验证通过",
+      "note": "没有读取或展示真实秘密，也没有执行线上写操作。",
+      "findings": [
+        {
+          "title": "会话写入已增加同源保护",
+          "level": "已缓解"
+        },
+        {
+          "title": "解锁状态改为客户端绑定",
+          "level": "已缓解"
+        },
+        {
+          "title": "HTTP 与容器加固已上线",
+          "level": "已验证"
+        },
+        {
+          "title": "PIN 强 KDF 与限速已上线",
+          "level": "已验证"
+        }
+      ]
+    },
+    "boundary": {
+      "title": "明文停在本地",
+      "lead": "浏览器完成密钥派生和密码库解密。代理只负责转发 Bitwarden 请求，不承担密码库明文存储。",
+      "nodes": [
+        {
+          "name": "你的浏览器",
+          "detail": "派生密钥，解密数据"
+        },
+        {
+          "name": "请求代理",
+          "detail": "转发官方 API 请求"
+        },
+        {
+          "name": "Bitwarden",
+          "detail": "账户与加密密码库"
+        }
+      ],
+      "cipher": "密文",
+      "browserBadge": "密钥派生 · 本地解密",
+      "proxyBadge": "仅转发 · 不解密",
+      "note": "开源代码和 agent skill 都可以独立检查。"
+    },
+    "final": {
+      "eyebrow": "控制权仍然属于你",
+      "title": "把整理工作交出去，把明文留在本地。",
+      "primary": "打开 Bitwardenagents",
+      "source": "阅读源码",
+      "skill": "查看 Agent Skill",
+      "llms": "查看 llms.txt"
+    },
+    "footer": {
+      "note": "开源的 Bitwarden 扩展管理工具",
+      "privacy": "无分析脚本，无广告追踪。"
+    }
+  },
+  "en": {
+    "meta": {
+      "title": "Bitwardenagents | Safe Bitwarden work for agents",
+      "description": "Constrain agent vault operations with redaction, dry runs, recoverable deletion, and local decryption."
+    },
+    "nav": {
+      "safety": "Guardrails",
+      "proof": "Real capability",
+      "security": "Security report",
+      "source": "Source",
+      "open": "Open vault",
+      "theme": "Toggle theme",
+      "language": "Switch language"
+    },
+    "hero": {
+      "eyebrow": "A Bitwarden tool built for agents",
+      "title": "Agents organize. Plaintext stays local.",
+      "lead": "Redacted by default. Preview first, confirm second. Delegate duplicates, health checks, and infrastructure credentials while keeping control.",
+      "primary": "Open vault",
+      "secondary": "View source",
+      "visualLabel": "Live demo panel",
+      "visualNote": "Synthetic data · no real account connection"
+    },
+    "heroWindow": {
+      "windowTitle": "bwvault / demo",
+      "demoBadge": "Synthetic data",
+      "sidebarTitle": "Folders",
+      "folders": [
+        {
+          "name": "Dev tools",
+          "count": 96
+        },
+        {
+          "name": "Cloud",
+          "count": 54
+        },
+        {
+          "name": "Social",
+          "count": 88
+        },
+        {
+          "name": "Finance",
+          "count": 31
+        },
+        {
+          "name": "Work",
+          "count": 43
+        }
+      ],
+      "healthLabel": "Health score",
+      "healthCmd": "analyze health",
+      "itemsLabel": "items",
+      "items": [
+        {
+          "site": "GitHub",
+          "user": "boss@itycon.cn",
+          "flag": "dupe"
+        },
+        {
+          "site": "Cloudflare",
+          "user": "ops@itycon.cn",
+          "flag": null
+        },
+        {
+          "site": "AWS Console",
+          "user": "root@itycon.cn",
+          "flag": "weak"
+        },
+        {
+          "site": "GitHub",
+          "user": "boss@itycon.cn",
+          "flag": "dupe"
+        },
+        {
+          "site": "WeChat",
+          "user": "138****8890",
+          "flag": null
+        },
+        {
+          "site": "Google Cloud",
+          "user": "dev@itycon.cn",
+          "flag": "reuse"
+        },
+        {
+          "site": "Zhihu",
+          "user": "boss@itycon.cn",
+          "flag": null
+        }
+      ],
+      "flags": {
+        "dupe": "duplicate",
+        "weak": "weak",
+        "reuse": "reused"
+      },
+      "scanScanning": "Agent scanning…",
+      "scanFound": "2 duplicates found",
+      "scanReady": "Preview ready · waiting for your confirmation",
+      "scanMerged": "Merged 1 · recoverable from trash",
+      "maskNote": "Passwords stay masked"
+    },
+    "vaultBridge": {
+      "title": "One vault for you and your agents",
+      "lead": "Logins, cards, identities, secure notes, and SSH keys stay in Bitwarden. Bitwardenagents adds self-hosted Web, Docker, and CLI access without scattered copies.",
+      "nativeLabel": "Native Bitwarden items",
+      "vaultLabel": "One encrypted vault",
+      "accessLabel": "Bitwardenagents access layer",
+      "synthetic": "Synthetic data",
+      "encrypted": "Encrypted",
+      "localNote": "Original data stays in Bitwarden. Agents receive redacted output by default.",
+      "stageHint": "Choose an item and an interface, then run the secure route",
+      "routeAction": "Run route",
+      "routeReady": "Selected: {type} → {interface}",
+      "routeRunning": "Routing encrypted data…",
+      "routeDone": "{type} returned a redacted result through {interface}",
+      "types": [
+        {
+          "id": "login",
+          "index": "01",
+          "name": "Logins",
+          "detail": "Username, password, URI, TOTP, and passkeys",
+          "sample": [
+            "account",
+            "ops@itycon.cn",
+            "password",
+            "••••••••",
+            "totp",
+            "••••••"
+          ]
+        },
+        {
+          "id": "card",
+          "index": "02",
+          "name": "Cards",
+          "detail": "Cardholder, number, expiry, and security code",
+          "sample": [
+            "holder",
+            "T. Yan",
+            "number",
+            "•••• 4242",
+            "cvv",
+            "•••"
+          ]
+        },
+        {
+          "id": "identity",
+          "index": "03",
+          "name": "Identities",
+          "detail": "Names, addresses, contact details, and IDs",
+          "sample": [
+            "name",
+            "T. Yan",
+            "address",
+            "••••••••",
+            "id",
+            "••••••"
+          ]
+        },
+        {
+          "id": "note",
+          "index": "04",
+          "name": "Secure notes",
+          "detail": "Recovery codes, authorization data, and private text",
+          "sample": [
+            "title",
+            "Recovery codes",
+            "content",
+            "••••••••",
+            "status",
+            "stored"
+          ]
+        },
+        {
+          "id": "ssh",
+          "index": "05",
+          "name": "SSH keys",
+          "detail": "Private key, public key, and fingerprint",
+          "sample": [
+            "host",
+            "nas.local",
+            "private",
+            "••••••••",
+            "fingerprint",
+            "SHA256:••••"
+          ]
+        }
+      ],
+      "interfaces": [
+        {
+          "id": "web",
+          "name": "Web",
+          "detail": "Browse, organize, and edit native item types in the browser.",
+          "command": "Open the /dev/ management panel",
+          "result": "five item types in one view"
+        },
+        {
+          "id": "docker",
+          "name": "Docker",
+          "detail": "Persist the session on NAS and unlock with a PIN after restart.",
+          "command": "BWVAULT_HOME=/data/session",
+          "result": "session  persisted"
+        },
+        {
+          "id": "agent",
+          "name": "Agent CLI",
+          "detail": "Agents use stable aliases and machine-readable output. Secrets stay hidden by default.",
+          "command": "bwvault credential list --json",
+          "result": "cloudflare.itycon.dns  stored  masked"
+        }
+      ]
+    },
+    "guardrails": {
+      "title": "Every operation passes four gates",
+      "lead": "Not a slogan. The terminal below runs a real command; the gates light up as it executes.",
+      "steps": [
+        {
+          "state": "INPUT",
+          "title": "Secrets stay out of argv",
+          "body": "Passwords enter through stdin, hidden prompts, or controlled environment variables."
+        },
+        {
+          "state": "MASKED",
+          "title": "Output is redacted",
+          "body": "Passwords, TOTP codes, card numbers, and private keys stay masked."
+        },
+        {
+          "state": "DRY RUN",
+          "title": "Writes preview first",
+          "body": "Without explicit --apply, management commands return a plan only."
+        },
+        {
+          "state": "RECOVERABLE",
+          "title": "Deletion is recoverable",
+          "body": "Normal deletion moves items to trash. Purging needs extra confirmation."
+        }
+      ]
+    },
+    "theater": {
+      "replay": "Replay",
+      "applyOn": "Confirm demo --apply",
+      "applyOff": "Back to dry run",
+      "modeDry": "Dry run",
+      "modeApply": "Apply",
+      "gateHint": "Click any gate to replay",
+      "dry": [
+        {
+          "t": "cmd",
+          "text": "bwvault manage dedup --dry-run"
+        },
+        {
+          "t": "bar",
+          "label": "decrypting",
+          "max": 312
+        },
+        {
+          "t": "out",
+          "text": "✓ decrypted locally / secrets never enter argv",
+          "cls": "ok",
+          "gate": 0
+        },
+        {
+          "t": "out",
+          "text": "Dry run: 3 duplicate groups, 5 items would be soft-deleted.",
+          "gate": 2
+        },
+        {
+          "t": "out",
+          "text": "Re-run with --apply to execute.",
+          "cls": "dim"
+        },
+        {
+          "t": "kv",
+          "rows": [
+            [
+              "Mode",
+              "dry-run (no changes made)"
+            ],
+            [
+              "Duplicate groups",
+              "3"
+            ],
+            [
+              "Items to soft-delete",
+              "5"
+            ]
+          ],
+          "gate": 1
+        },
+        {
+          "t": "out",
+          "text": "keep    GitHub / boss@itycon.cn",
+          "cls": "ok"
+        },
+        {
+          "t": "out",
+          "text": "remove  GitHub (2021-06-13) / soft-delete → trash",
+          "cls": "warn",
+          "gate": 3
+        }
+      ],
+      "apply": [
+        {
+          "t": "cmd",
+          "text": "bwvault manage dedup --apply"
+        },
+        {
+          "t": "out",
+          "text": "confirm: 5 items will be soft-deleted [y/N]",
+          "cls": "dim"
+        },
+        {
+          "t": "key",
+          "text": "y"
+        },
+        {
+          "t": "bar",
+          "label": "soft-deleting",
+          "max": 5
+        },
+        {
+          "t": "out",
+          "text": "✓ Soft-deleted 5 duplicate items. Recoverable from trash.",
+          "cls": "ok",
+          "gate": 3
+        }
+      ]
+    },
+    "cli": {
+      "title": "Manage in Web. Execute in CLI.",
+      "lead": "One encryption implementation serves the browser and command line. Agents get machine-readable results while disclosure stays explicit.",
+      "command": "node agent-harness/bin/bwvault.js --help",
+      "copy": "Copy command",
+      "copied": "Copied",
+      "playgroundHint": "Click a command group to see its real --help output",
+      "runs": {
+        "auth": [
+          "login     Sign in (--api-key | --password)",
+          "logout    Clear the stored session",
+          "status    Show session info (never prints secrets)"
+        ],
+        "vault": [
+          "sync      Pull the latest vault from the server",
+          "list      List entries (secrets redacted unless --reveal)",
+          "search    Search entries by name/username/URI",
+          "get       Show one entry in full (redacted unless --reveal)",
+          "folders   List folders"
+        ],
+        "analyze": [
+          "health      Weak / empty / reused / stale passwords",
+          "duplicates  Duplicate and same-site clusters",
+          "urls        Dead-link candidates"
+        ],
+        "manage": [
+          "dedup     Merge duplicate entries (soft-delete, recoverable)",
+          "trash     list | restore | purge  (purge is irreversible)",
+          "folders   create | rename | delete"
+        ],
+        "credential": [
+          "list      List aliases and metadata (never returns secrets)",
+          "set       Create or update an alias (secret via stdin/prompt/env)"
+        ]
+      },
+      "groups": [
+        {
+          "name": "auth",
+          "description": "Authenticate and manage the local session"
+        },
+        {
+          "name": "vault",
+          "description": "Inspect and move data"
+        },
+        {
+          "name": "analyze",
+          "description": "Read-only reporting (no vault mutation)"
+        },
+        {
+          "name": "manage",
+          "description": "Mutating operations (all support --dry-run)"
+        },
+        {
+          "name": "credential",
+          "description": "Store service credentials by stable alias"
+        }
+      ]
+    },
+    "product": {
+      "title": "Try the interactive demo before connecting",
+      "lead": "Demo mode uses the product's own rendering and analysis flow. The data is synthetic. The interaction is real.",
+      "imageAlt": "Bitwardenagents demo overview showing vault health and maintenance actions",
+      "items": [
+        {
+          "title": "Health priorities",
+          "body": "Find weak, reused, stale, and incomplete credentials."
+        },
+        {
+          "title": "Duplicate cleanup",
+          "body": "Review differences before choosing a recoverable cleanup path."
+        },
+        {
+          "title": "Stable credential aliases",
+          "body": "Agents address service credentials by name instead of repeated copy and paste."
+        }
+      ],
+      "cta": "Open demo entry",
+      "panelBadge": "Synthetic data",
+      "healthBars": [
+        {
+          "label": "Weak passwords",
+          "value": 14
+        },
+        {
+          "label": "Reused passwords",
+          "value": 9
+        },
+        {
+          "label": "Stale credentials",
+          "value": 5
+        },
+        {
+          "label": "Missing fields",
+          "value": 7
+        }
+      ],
+      "healthCmd": "analyze health",
+      "dedupe": {
+        "cardA": "GitHub · boss@itycon.cn",
+        "cardB": "GitHub · copy (created 2021-06)",
+        "keep": "keep",
+        "merge": "merge · soft-delete",
+        "result": "B → trash · recoverable"
+      },
+      "dedupeCmd": "manage dedup",
+      "alias": {
+        "cmd": "bwvault credential list",
+        "rows": [
+          [
+            "cloudflare.dns.token",
+            "ops@itycon.cn",
+            "api.cloudflare.com"
+          ],
+          [
+            "github.ci",
+            "boss@itycon.cn",
+            "github.com"
+          ],
+          [
+            "nas.ssh",
+            "tycon",
+            "ssh://nas"
+          ]
+        ],
+        "masked": "●●●●●●●●",
+        "note": "Metadata visible · secrets never returned"
+      }
+    },
+    "securityReport": {
+      "eyebrow": "Security audit record",
+      "title": "Publish the findings before the finish line.",
+      "lead": "We reviewed the source, container, and NAS surface through OWASP WSTG/ASVS and the CIS Docker Benchmark. The fixes are deployed to the NAS and passed the production checks.",
+      "link": "Read security report",
+      "status": "Deployed · production verified",
+      "note": "No real secrets were read or displayed, and no production write operation was executed.",
+      "findings": [
+        {
+          "title": "Session writes now require same-origin requests",
+          "level": "Mitigated"
+        },
+        {
+          "title": "Unlock state is client-bound",
+          "level": "Mitigated"
+        },
+        {
+          "title": "HTTP and container hardening are live",
+          "level": "Verified"
+        },
+        {
+          "title": "PIN KDF and rate limiting are live",
+          "level": "Verified"
+        }
+      ]
+    },
+    "boundary": {
+      "title": "Plaintext stops locally",
+      "lead": "The browser derives keys and decrypts the vault. The proxy forwards Bitwarden requests and does not store vault plaintext.",
+      "nodes": [
+        {
+          "name": "Your browser",
+          "detail": "Derive keys and decrypt data"
+        },
+        {
+          "name": "Request proxy",
+          "detail": "Forward official API requests"
+        },
+        {
+          "name": "Bitwarden",
+          "detail": "Account and encrypted vault"
+        }
+      ],
+      "cipher": "ciphertext",
+      "browserBadge": "key derivation · local decrypt",
+      "proxyBadge": "forwards only · never decrypts",
+      "note": "The source and agent skill remain independently inspectable."
+    },
+    "final": {
+      "eyebrow": "Control remains yours",
+      "title": "Delegate the cleanup. Keep plaintext local.",
+      "primary": "Open Bitwardenagents",
+      "source": "Read source",
+      "skill": "View Agent Skill",
+      "llms": "View llms.txt"
+    },
+    "footer": {
+      "note": "An open-source Bitwarden management extension",
+      "privacy": "No analytics scripts. No advertising trackers."
+    }
+  }
+}

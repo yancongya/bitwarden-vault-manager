@@ -1,0 +1,3349 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark" class="landing-boot">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bitwardenagents | 让 Agent 安全整理 Bitwarden</title>
+  <meta name="description" content="用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。">
+  <link rel="canonical" href="https://bitwardenagents.itycon.cn/">
+  <link rel="icon" type="image/svg+xml" href="./assets/brand-logo.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Bitwardenagents | 让 Agent 安全整理 Bitwarden">
+  <meta property="og:description" content="用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。">
+  <meta property="og:url" content="https://bitwardenagents.itycon.cn/">
+  <meta property="og:image" content="https://bitwardenagents.itycon.cn/assets/dashboard-light.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bitwardenagents | 让 Agent 安全整理 Bitwarden">
+  <meta name="twitter:description" content="用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。">
+  <meta name="twitter:image" content="https://bitwardenagents.itycon.cn/assets/dashboard-light.png">
+  <script type="application/ld+json">[{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Bitwardenagents","url":"https://bitwardenagents.itycon.cn/","applicationCategory":"SecurityApplication","operatingSystem":"Web Browser, Node.js, Docker","description":"用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。","codeRepository":"https://github.com/yancongya/bitwardenagents","license":"https://opensource.org/licenses/MIT"}]</script>
+  <style>:root {
+  color-scheme: dark;
+  --bg: #09090b;
+  --surface: #111114;
+  --panel: #18181b;
+  --panel-strong: #1e1e22;
+  --ink: #fafafa;
+  --muted: #a1a1aa;
+  --faint: #71717a;
+  --border: #27272a;
+  --accent: #3b82f6;
+  --accent-strong: #60a5fa;
+  --accent-soft: rgb(59 130 246 / .12);
+  --success: #22c55e;
+  --warn: #eab308;
+  --danger: #ef4444;
+  --term-bg: #0d1117;
+  --term-ink: #e6edf3;
+  --term-muted: #8b949e;
+  --term-border: #21262d;
+  --term-bar: #161b22;
+  --term-accent: #60a5fa;
+  --term-ok: #4ade80;
+  --term-warn: #fbbf24;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --max: 1180px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  font-family: Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --panel: #f4f4f5;
+  --panel-strong: #ffffff;
+  --ink: #09090b;
+  --muted: #52525b;
+  --faint: #71717a;
+  --border: #e4e4e7;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: rgb(37 99 235 / .09);
+  --term-bg: #0d1117;
+  --term-ink: #e6edf3;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  transition: background-color .4s ease, color .4s ease;
+}
+
+.page-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .22s ease, visibility 0s linear .22s;
+}
+
+.page-intro.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .16s ease;
+}
+
+.page-intro img { width: 88px; height: 88px; }
+.page-intro span {
+  font-size: .72rem;
+  font-weight: 720;
+  letter-spacing: .12em;
+}
+
+a { color: inherit; }
+
+button, a { -webkit-tap-highlight-color: transparent; }
+
+button { font: inherit; }
+
+/* ---------- scroll progress ---------- */
+
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  height: 2px;
+  pointer-events: none;
+}
+
+.scroll-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: scroll-progress linear both;
+  animation-timeline: scroll(root block);
+}
+
+@keyframes scroll-progress { to { transform: scaleX(1); } }
+
+/* ---------- chrome ---------- */
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: -999px;
+  z-index: 20;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.skip-link:focus { left: 8px; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 68px;
+  padding: 10px max(24px, calc((100vw - var(--max)) / 2));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(14px);
+  transition: background-color .4s ease;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 10px;
+  font-weight: 720;
+  text-decoration: none;
+  letter-spacing: -.02em;
+}
+
+.brand img { width: 36px; height: 36px; }
+
+nav { display: flex; align-items: center; gap: 28px; }
+
+nav a, .final-actions > a:not(.button), .text-link {
+  color: var(--muted);
+  font-size: .875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .18s ease;
+}
+
+nav a:hover, .final-actions > a:not(.button):hover, .text-link:hover { color: var(--ink); }
+
+.header-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s var(--ease);
+}
+
+.icon-button:hover { border-color: var(--accent); }
+.icon-button:active { transform: scale(.94); }
+
+.header-launch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 8px 2px;
+  border-bottom: 1px solid transparent;
+  color: var(--ink);
+  font-size: .84rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color .18s ease, border-color .18s ease;
+}
+
+.header-launch::after {
+  content: "↗";
+  margin-left: 8px;
+  color: var(--accent);
+  font-size: 1rem;
+  transition: transform .18s var(--ease);
+}
+
+.header-launch:hover { color: var(--accent); border-color: var(--accent); }
+.header-launch:hover::after { transform: translate(2px, -2px); }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: .92rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform .18s var(--ease), background .18s ease, box-shadow .18s ease;
+}
+
+.button:hover {
+  background: var(--accent-strong);
+  box-shadow: 0 6px 24px rgb(59 130 246 / .28);
+}
+
+.button:active { transform: translateY(1px); }
+.button-small { min-height: 42px; padding-inline: 15px; }
+
+.button-quiet {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--ink);
+}
+
+.button-quiet:hover { background: var(--panel); box-shadow: none; }
+
+main > section, footer {
+  width: min(var(--max), calc(100% - 48px));
+  margin-inline: auto;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(520px, 1.18fr);
+  align-items: center;
+  gap: clamp(48px, 7vw, 96px);
+  min-height: calc(100dvh - 68px);
+  padding-block: 76px;
+}
+
+.hero-stagger {
+  animation: hero-in .7s var(--ease) both;
+  animation-delay: calc(var(--st) * 110ms);
+}
+
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.eyebrow {
+  margin: 0 0 20px;
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+h1, h2, h3, p { margin-top: 0; }
+
+h1 {
+  max-width: 12ch;
+  margin-bottom: 24px;
+  font-size: clamp(2.8rem, 5.3vw, 5.5rem);
+  line-height: .99;
+  letter-spacing: -.058em;
+  font-weight: 720;
+  text-wrap: balance;
+}
+
+h2 {
+  margin-bottom: 18px;
+  font-size: clamp(2rem, 3.5vw, 3.7rem);
+  line-height: 1.06;
+  letter-spacing: -.045em;
+}
+
+h3 { line-height: 1.25; letter-spacing: -.02em; }
+
+.hero-lead, .section-heading p, .cli-copy > p, .boundary-copy > p {
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 1.04rem;
+}
+
+.hero-lead { max-width: 40ch; margin-bottom: 30px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.hero-launch,
+.hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--ink);
+  font-size: .92rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero-launch {
+  gap: 18px;
+  min-width: 190px;
+  justify-content: space-between;
+  padding: 0 4px 4px 0;
+  border-bottom: 2px solid var(--accent);
+  transition: color .2s ease, border-color .2s ease;
+}
+
+.hero-launch > span:last-child {
+  color: var(--accent);
+  font-size: 1.25rem;
+  transition: transform .2s var(--ease);
+}
+
+.hero-launch:hover { color: var(--accent); border-color: transparent; }
+.hero-launch:hover > span:last-child { transform: translateX(5px); }
+
+.hero-secondary {
+  padding-inline: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  transition: color .2s ease;
+}
+
+.hero-secondary:hover { color: var(--ink); }
+
+/* ---------- vault window (hero live panel) ---------- */
+
+.product-frame, .product-proof {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 22px 70px rgb(0 0 0 / .17);
+  transition: border-color .3s ease;
+}
+
+.vault-frame:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+
+.vault-window {
+  display: grid;
+  grid-template-rows: 42px 1fr;
+  background: var(--panel);
+  min-height: 430px;
+}
+
+.vault-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-strong);
+}
+
+.vault-titlebar span { width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+.vault-titlebar span:first-child { background: #f87171; }
+.vault-titlebar span:nth-child(2) { background: #fbbf24; }
+.vault-titlebar span:nth-child(3) { background: #34d399; }
+
+.vault-titlebar strong {
+  margin-left: 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 500;
+}
+
+.vault-demo-badge {
+  margin-left: auto;
+  padding: 2px 9px;
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--border));
+  border-radius: 99px;
+  color: var(--warn);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.vault-body { display: grid; grid-template-columns: 150px 1fr; }
+
+.vault-sidebar {
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-strong) 60%, var(--panel));
+}
+
+.vault-sidebar-title {
+  margin: 0 0 10px;
+  padding: 0 8px;
+  color: var(--faint);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.vault-folder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: .74rem;
+  opacity: 0;
+  animation: hero-in .4s var(--ease) forwards;
+  animation-delay: calc(.45s + var(--f) * 55ms);
+}
+
+.vault-folder.active { background: var(--accent-soft); color: var(--ink); }
+.vault-folder em { font-style: normal; color: var(--faint); font-size: .66rem; }
+
+.vault-main {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.vault-health {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.health-ring { flex: none; width: 52px; height: 52px; }
+
+.health-ring .track { stroke: var(--border); }
+.health-ring .fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 1.4s var(--ease);
+}
+
+.health-copy { display: grid; }
+.health-copy strong { font-size: 1.02rem; line-height: 1.2; }
+.health-copy small {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .04em;
+}
+
+.vault-list {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.vault-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  animation: hero-in .45s var(--ease) forwards;
+  animation-delay: calc(.6s + var(--i) * 80ms);
+  transition: background-color .35s ease, box-shadow .35s ease, outline-color .3s ease;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+}
+
+.vault-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: .66rem;
+  font-weight: 700;
+}
+
+.vault-row[data-flag="weak"] .vault-avatar { background: rgb(239 68 68 / .14); color: var(--danger); }
+.vault-row[data-flag="reuse"] .vault-avatar { background: rgb(234 179 8 / .14); color: var(--warn); }
+
+.vault-id { min-width: 0; }
+.vault-id strong { display: block; font-size: .8rem; line-height: 1.3; }
+.vault-id span {
+  display: block;
+  overflow: hidden;
+  color: var(--faint);
+  font-size: .68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-mask {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .74rem;
+  letter-spacing: .12em;
+  animation: mask-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes mask-pulse {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+
+.vault-flag {
+  display: none;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: .6rem;
+  font-weight: 700;
+}
+
+.vault-row[data-flag="weak"] .vault-flag { background: rgb(239 68 68 / .12); color: var(--danger); }
+.vault-row[data-flag="reuse"] .vault-flag { background: rgb(234 179 8 / .12); color: var(--warn); }
+
+.vault-row.scanned {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.vault-row.dupe { outline-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+.vault-row.kept { box-shadow: 0 0 0 1px var(--success) inset; }
+.vault-row.kept .vault-id strong::after {
+  content: " ✓";
+  color: var(--success);
+}
+
+.vault-row.merging {
+  animation: merge-away .7s var(--ease) forwards;
+}
+
+@keyframes merge-away {
+  0% { opacity: 1; transform: none; }
+  55% { opacity: .8; transform: translateX(14px); }
+  100% { opacity: 0; transform: translateX(26px); max-height: 0; padding-block: 0; margin: 0; }
+}
+
+.vault-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: .68rem;
+}
+
+.vault-status .state { display: flex; align-items: center; gap: 8px; }
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dot-blink 1.2s ease-in-out infinite;
+}
+
+.status-dot.ok { background: var(--success); animation: none; }
+.status-dot.ready { background: var(--warn); animation: none; }
+
+@keyframes dot-blink { 50% { opacity: .25; } }
+
+.vault-status .note { color: var(--faint); letter-spacing: .03em; }
+
+.product-frame figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 650;
+}
+
+.product-frame figcaption small { color: var(--muted); font-weight: 500; }
+
+/* ---------- one vault, two users ---------- */
+
+.vault-bridge-section {
+  padding-block: 132px;
+  border-top: 1px solid var(--border);
+}
+
+.bridge-heading { max-width: 790px; margin-bottom: 52px; }
+
+.vault-bridge {
+  display: grid;
+  grid-template-columns: minmax(230px, .86fr) minmax(300px, 1fr) minmax(280px, 1fr);
+  border-block: 1px solid var(--border);
+}
+
+.bridge-types,
+.bridge-center,
+.bridge-access { min-width: 0; padding: 24px; }
+
+.bridge-center,
+.bridge-access { border-left: 1px solid var(--border); }
+
+.bridge-label {
+  margin: 0 0 18px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.bridge-type-list { display: grid; }
+
+.bridge-type {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 2px 10px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: padding-left .24s var(--ease), color .2s ease;
+}
+
+.bridge-type::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .3s var(--ease);
+}
+
+.bridge-type:hover,
+.bridge-type.active { padding-left: 12px; }
+.bridge-type.active::after { transform: scaleX(1); }
+.bridge-type > span { grid-row: 1 / 3; color: var(--faint); font-family: var(--mono); font-size: .67rem; }
+.bridge-type strong { font-size: .88rem; line-height: 1.2; }
+.bridge-type small { overflow: hidden; color: var(--muted); font-size: .69rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+
+.bridge-center { display: grid; grid-template-rows: auto auto 34px auto 34px; align-content: start; }
+
+.bridge-field-preview {
+  min-height: 154px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: opacity .2s ease, transform .3s var(--ease);
+}
+
+.bridge-field-preview header,
+.bridge-access-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.bridge-field-preview header strong { font-size: .86rem; }
+.bridge-field-preview header span,
+.bridge-access-head > span { color: var(--warn); font-size: .6rem; font-weight: 700; }
+.bridge-field-preview dl { display: grid; gap: 7px; margin: 0; }
+.bridge-field-preview dl > div { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; }
+.bridge-field-preview dt { color: var(--faint); font-family: var(--mono); font-size: .64rem; }
+.bridge-field-preview dd { margin: 0; overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.bridge-route { position: relative; width: 2px; height: 34px; justify-self: center; background: var(--border); }
+.bridge-route.outbound { background: linear-gradient(var(--border), color-mix(in srgb, var(--accent) 45%, var(--border))); }
+
+.bridge-packet {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 15px;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, var(--border));
+  border-radius: 7px;
+  background: var(--panel-strong);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .53rem;
+  opacity: 0;
+  transform: translate(-50%, -2px);
+}
+
+.vault-bridge.routing .bridge-route:not(.outbound) .bridge-packet { animation: bridge-packet-in .8s var(--ease) both; }
+.vault-bridge.routing .bridge-route.outbound .bridge-packet { animation: bridge-packet-out .8s .12s var(--ease) both; }
+
+@keyframes bridge-packet-in {
+  0% { opacity: 0; transform: translate(-50%, -4px); }
+  15%, 75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 24px); }
+}
+
+@keyframes bridge-packet-out {
+  0% { opacity: 0; transform: translate(-50%, -4px); }
+  20%, 75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 24px); }
+}
+
+.bridge-vault-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  min-height: 148px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: var(--radius);
+  background: radial-gradient(circle at 50% 45%, var(--accent-soft), transparent 58%), var(--panel);
+  isolation: isolate;
+}
+
+.bridge-vault-core img { position: relative; z-index: 2; width: 46px; height: 46px; }
+.bridge-vault-core > strong { position: relative; z-index: 2; font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; }
+.bridge-vault-core > span:last-child { position: relative; z-index: 2; color: var(--accent-strong); font-size: .67rem; }
+.bridge-vault-core.receiving { animation: vault-receive .65s var(--ease); }
+
+@keyframes vault-receive {
+  45% { border-color: var(--accent); transform: scale(.985); }
+}
+
+.bridge-orbit { position: absolute !important; inset: 50% auto auto 50%; z-index: 1 !important; width: 118px; height: 118px; border: 1px dashed color-mix(in srgb, var(--accent) 42%, var(--border)); border-radius: 50%; transform: translate(-50%, -50%); }
+.bridge-orbit i { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: .42; }
+.bridge-orbit i:nth-child(1) { top: -3px; left: 54px; }
+.bridge-orbit i:nth-child(2) { top: 32px; right: 1px; }
+.bridge-orbit i:nth-child(3) { right: 18px; bottom: 9px; }
+.bridge-orbit i:nth-child(4) { bottom: 9px; left: 18px; }
+.bridge-orbit i:nth-child(5) { top: 32px; left: 1px; }
+.bridge-vault-core.receiving .bridge-orbit i { animation: orbit-confirm .55s ease both; animation-delay: calc(var(--n, 0) * 50ms); }
+@keyframes orbit-confirm { 50% { opacity: 1; transform: scale(1.8); } }
+
+.bridge-access-head .bridge-label { margin-bottom: 0; }
+.bridge-interface-tabs { display: flex; gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel); }
+.bridge-interface { flex: 1; min-height: 40px; padding: 0 8px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: .72rem; font-weight: 700; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.bridge-interface.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 rgb(0 0 0 / .06); }
+
+.bridge-output {
+  display: grid;
+  align-content: start;
+  min-height: 236px;
+  padding: 18px;
+  border: 1px solid var(--term-border);
+  border-radius: var(--radius);
+  background: var(--term-bg);
+  color: var(--term-ink);
+}
+
+.bridge-output.switching { animation: bridge-output-in .42s var(--ease); }
+@keyframes bridge-output-in { from { opacity: .35; transform: translateY(7px); } }
+.bridge-output p { min-height: 64px; margin-bottom: 20px; color: var(--term-muted); font-size: .76rem; }
+.bridge-output code,
+.bridge-output pre { overflow: hidden; margin: 0; font-family: var(--mono); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.bridge-output code { padding-bottom: 15px; border-bottom: 1px solid var(--term-border); color: var(--term-ink); }
+.bridge-output code span { color: var(--term-accent); }
+.bridge-output pre { margin-top: 15px; color: var(--term-ok); }
+.bridge-note { max-width: 720px; margin: 24px 0 0 auto; color: var(--faint); font-size: .76rem; text-align: right; }
+
+.bridge-route-status {
+  grid-column: 1 / -1;
+  min-height: 20px;
+  padding: 0 5px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .68rem;
+  text-align: center;
+  transition: color .2s ease;
+}
+.bridge-route-status[data-state="running"] { color: var(--accent-strong); }
+.bridge-route-status[data-state="done"] { color: var(--success); }
+
+/* Interactive vault router: one source, one encrypted core, many controlled surfaces. */
+.vault-bridge {
+  position: relative;
+  grid-template-columns: minmax(230px, .82fr) minmax(280px, .9fr) minmax(300px, 1.08fr);
+  gap: 18px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.35);
+  background:
+    radial-gradient(circle at 47% 48%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 28%),
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 86%, transparent), var(--panel));
+  box-shadow: 0 28px 90px rgb(0 0 0 / .08);
+  isolation: isolate;
+}
+
+.vault-bridge::before {
+  content: "";
+  position: absolute;
+  inset: 70px 28% 36px 25%;
+  z-index: -1;
+  border: 1px dashed color-mix(in srgb, var(--accent) 34%, transparent);
+  border-radius: 50%;
+  opacity: .55;
+  transform: rotate(-7deg);
+}
+
+.bridge-stage-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.bridge-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  min-height: 42px;
+  padding: 0 4px 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 .72rem/1 var(--sans);
+  cursor: pointer;
+  transition: border-color .2s ease, transform .25s var(--ease), box-shadow .25s ease;
+}
+
+.bridge-run i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-style: normal;
+  transition: transform .3s var(--ease);
+}
+
+.bridge-run:hover { border-color: var(--accent); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 15%, transparent); transform: translateY(-2px); }
+.bridge-run:hover i { transform: translateX(2px) rotate(-8deg); }
+.bridge-run:disabled { cursor: wait; opacity: .65; transform: none; }
+
+.bridge-types,
+.bridge-center,
+.bridge-access {
+  position: relative;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.bridge-center,
+.bridge-access { border-left: 1px solid color-mix(in srgb, var(--border) 82%, transparent); }
+.bridge-type-list { gap: 6px; }
+.bridge-type { min-height: 58px; padding: 9px 8px; border-bottom-color: transparent; border-radius: 8px; }
+.bridge-type:hover { background: var(--panel); }
+.bridge-type.active { padding-left: 13px; background: var(--accent-soft); }
+.bridge-type.active::after { right: auto; left: 0; bottom: 10px; width: 2px; height: calc(100% - 20px); transform: scaleY(1); }
+.bridge-type::after { right: auto; left: 0; bottom: 10px; width: 2px; height: calc(100% - 20px); transform: scaleY(0); transform-origin: center; }
+
+.bridge-center { grid-template-rows: auto auto 30px auto 30px; align-self: center; overflow: visible; }
+.bridge-field-preview { transform: rotate(-1.2deg); box-shadow: 0 12px 30px rgb(0 0 0 / .08); }
+.bridge-vault-core { min-height: 154px; border-radius: 50%; aspect-ratio: 1; width: min(154px, 100%); justify-self: center; box-shadow: 0 0 0 9px var(--surface), 0 0 0 10px color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.bridge-orbit { animation: bridge-orbit-spin 16s linear infinite; }
+@keyframes bridge-orbit-spin { to { transform: translate(-50%, -50%) rotate(1turn); } }
+
+.bridge-access { align-self: stretch; }
+.bridge-interface-tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+.bridge-interface { position: relative; }
+.bridge-interface.active::after { content: ""; position: absolute; right: 7px; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.bridge-output { position: relative; min-height: 218px; transform: rotate(.7deg); box-shadow: 0 14px 34px rgb(0 0 0 / .13); }
+.bridge-output.waiting::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 25%, color-mix(in srgb, var(--term-accent) 18%, transparent), transparent 75%); transform: translateX(-100%); animation: bridge-output-scan .8s linear infinite; }
+.bridge-output.delivered { animation: bridge-delivered .7s var(--ease); }
+@keyframes bridge-output-scan { to { transform: translateX(100%); } }
+@keyframes bridge-delivered { 45% { border-color: var(--term-ok); transform: rotate(0) translateY(-3px); } }
+
+.bridge-route-status {
+  grid-column: 1 / -1;
+  min-height: 28px;
+  padding: 3px 6px 0 24px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .68rem;
+}
+
+.bridge-route-status::before { content: "○"; margin-left: -18px; margin-right: 8px; color: var(--faint); }
+.bridge-route-status[data-state="running"] { color: var(--accent-strong); }
+.bridge-route-status[data-state="running"]::before { content: "◌"; color: var(--accent); animation: bridge-status-spin .65s linear infinite; }
+.bridge-route-status[data-state="done"] { color: var(--success); }
+.bridge-route-status[data-state="done"]::before { content: "●"; color: var(--success); }
+@keyframes bridge-status-spin { to { filter: hue-rotate(1turn); transform: rotate(1turn); } }
+
+.vault-bridge.routing .bridge-vault-core { box-shadow: 0 0 0 9px var(--surface), 0 0 0 10px var(--accent), 0 0 42px color-mix(in srgb, var(--accent) 28%, transparent); }
+.vault-bridge.route-complete .bridge-interface.active { color: var(--accent-strong); }
+
+/* ---------- 3D vault gravity field ---------- */
+
+.vault-bridge {
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.vault-bridge::before { display: none; }
+
+.vault-universe {
+  position: relative;
+  min-height: 640px;
+  overflow: hidden;
+  background: radial-gradient(circle at 49% 38%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28%);
+}
+
+.vault-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.vault-scene.is-unavailable { display: none; }
+
+.bridge-types,
+.bridge-access {
+  position: absolute;
+  z-index: 4;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.bridge-types { inset: 28px auto auto 24px; width: 310px; height: 430px; }
+.bridge-types > .bridge-label { position: absolute; top: 0; left: 0; }
+.bridge-type-list { position: absolute; inset: 34px 0 0; display: block; }
+
+.bridge-type {
+  position: absolute;
+  width: 224px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  transform: translateZ(0);
+  transition: border-color .25s ease, box-shadow .3s ease, transform .35s var(--ease), opacity .25s ease;
+}
+
+.bridge-type:nth-child(1) { top: 8px; left: 14px; transform: rotate(-2.5deg); }
+.bridge-type:nth-child(2) { top: 92px; left: 58px; transform: rotate(1.5deg); }
+.bridge-type:nth-child(3) { top: 176px; left: 10px; transform: rotate(-1deg); }
+.bridge-type:nth-child(4) { top: 260px; left: 66px; transform: rotate(2deg); }
+.bridge-type:nth-child(5) { top: 344px; left: 22px; transform: rotate(-1.5deg); }
+.bridge-type:hover { z-index: 3; padding-left: 18px; border-color: var(--border); background: color-mix(in srgb, var(--surface) 55%, transparent); transform: translateX(10px) rotate(0); }
+.bridge-type.active { z-index: 2; padding-left: 18px; border-color: color-mix(in srgb, var(--accent) 72%, transparent); background: var(--accent-soft); box-shadow: none; transform: translateX(18px) rotate(0); }
+.bridge-type.active::after { display: none; }
+.bridge-type small { white-space: normal; }
+
+.bridge-vault-core {
+  position: absolute;
+  top: 190px;
+  left: 50%;
+  z-index: 5;
+  width: 170px;
+  min-height: 170px;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--panel) 85%, transparent), color-mix(in srgb, var(--panel) 28%, transparent) 64%, transparent 65%);
+  box-shadow: none;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.bridge-vault-core img { width: 54px; height: 54px; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.bridge-vault-core > strong { font-size: .66rem; }
+
+.bridge-access {
+  top: 48px;
+  right: 32px;
+  width: 260px;
+}
+.bridge-access-head { margin-bottom: 14px; }
+.bridge-interface-tabs { display: grid; gap: 12px; padding: 0; border: 0; background: transparent; }
+.bridge-interface {
+  position: relative;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 42px 0 16px;
+  border: 1px solid transparent;
+  border-bottom-color: var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  transition: border-color .25s ease, transform .35s var(--ease), box-shadow .3s ease;
+}
+.bridge-interface::before {
+  content: "0" counter(bridge-port);
+  position: absolute;
+  left: 16px;
+  color: var(--faint);
+  font: 600 .58rem/1 var(--mono);
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity .2s ease, transform .25s var(--ease);
+}
+.bridge-interface-tabs { counter-reset: bridge-port; }
+.bridge-interface { counter-increment: bridge-port; }
+.bridge-interface:hover { padding-left: 38px; border-color: transparent; border-bottom-color: var(--border); color: var(--ink); transform: translateX(-5px); }
+.bridge-interface:hover::before { opacity: 1; transform: none; }
+.bridge-interface.active { padding-left: 38px; border-color: transparent; border-bottom-color: var(--accent); background: transparent; box-shadow: none; transform: translateX(-8px); }
+.bridge-interface.active::before { color: var(--accent-strong); opacity: 1; transform: none; }
+.bridge-interface.active::after { right: 18px; bottom: 50%; transform: translateY(50%); }
+
+.bridge-detail-dock {
+  display: contents;
+}
+.bridge-field-preview {
+  position: absolute;
+  right: 350px;
+  bottom: 18px;
+  left: 28px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 48px;
+  padding: 10px 0;
+  overflow: hidden;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.bridge-field-preview > strong { flex: 0 0 auto; font-size: .78rem; }
+.bridge-inline-badge { flex: 0 0 auto; color: var(--warn); font-size: .58rem; font-weight: 700; }
+.bridge-inline-field { display: inline-flex; gap: 7px; color: var(--muted); font: .66rem/1.4 var(--mono); }
+.bridge-inline-field b { color: var(--faint); font-weight: 500; }
+
+.bridge-output {
+  position: absolute;
+  top: 270px;
+  right: 32px;
+  z-index: 6;
+  width: 280px;
+  min-height: 142px;
+  padding: 15px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--ink);
+  box-shadow: 0 14px 38px rgb(0 0 0 / .08);
+  backdrop-filter: blur(14px);
+  transform-origin: top right;
+}
+.bridge-output.switching { animation: bridge-side-panel-in .42s var(--ease); }
+@keyframes bridge-side-panel-in {
+  from { opacity: .2; transform: translateY(-8px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+.bridge-output p { min-height: 38px; margin-bottom: 11px; color: var(--muted); font-size: .68rem; }
+.bridge-output code { border-bottom-color: var(--border); color: var(--ink); }
+.bridge-output code span { color: var(--accent-strong); }
+.bridge-output code,
+.bridge-output pre { font-size: .62rem; }
+.bridge-output pre { margin-top: 11px; color: var(--success); }
+
+.bridge-flight-layer { position: absolute; inset: 0; z-index: 10; overflow: hidden; pointer-events: none; }
+.bridge-flight-packet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 75%, white);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+  color: var(--accent-strong);
+  font: 700 .65rem/1 var(--mono);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.vault-bridge.routing .bridge-vault-core { box-shadow: none; }
+.vault-bridge.routing .bridge-type:not(.active),
+.vault-bridge.routing .bridge-interface:not(.active) { opacity: .34; }
+.vault-bridge.route-complete .bridge-interface.active { animation: bridge-target-confirm .65s var(--ease); }
+@keyframes bridge-target-confirm { 45% { transform: translateX(-10px) scale(1.02); box-shadow: 0 0 0 5px var(--accent-soft); } }
+
+/* ---------- guardrails + theater ---------- */
+
+.safety-section { padding-block: 120px 140px; }
+.section-heading { max-width: 710px; margin-bottom: 58px; }
+
+.safety-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 54px;
+}
+
+.safety-rail::before {
+  content: "";
+  position: absolute;
+  top: 23px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 2px;
+  background: var(--border);
+}
+
+.rail-progress {
+  position: absolute;
+  z-index: 1;
+  top: 23px;
+  left: 12.5%;
+  width: 75%;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .6s var(--ease);
+}
+
+.gate {
+  position: relative;
+  z-index: 2;
+  padding-top: 62px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform .18s var(--ease);
+}
+
+.gate:hover { transform: translateY(-2px); }
+
+.gate::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border: 5px solid var(--bg);
+  border-radius: 50%;
+  background: var(--border);
+  box-shadow: 0 0 0 1px var(--border);
+  transform: translateX(-50%);
+  transition: background-color .3s ease, box-shadow .3s ease;
+}
+
+.gate.lit::before {
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgb(59 130 246 / .45);
+}
+
+.gate-state {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .08em;
+}
+
+.gate h3 { margin-bottom: 9px; font-size: 1rem; }
+.gate p { margin: 0; color: var(--muted); font-size: .88rem; }
+
+.theater { max-width: 860px; }
+
+.theater-terminal {
+  overflow: hidden;
+  border: 1px solid var(--term-border);
+  border-radius: var(--radius);
+  background: var(--term-bg);
+  color: var(--term-ink);
+  font-family: var(--mono);
+  box-shadow: 0 20px 58px rgb(0 0 0 / .2);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 46px;
+  padding: 0 15px;
+  border-bottom: 1px solid var(--term-border);
+  background: var(--term-bar);
+}
+
+.terminal-bar span { width: 9px; height: 9px; border-radius: 50%; background: #30363d; }
+.terminal-bar strong { margin-left: 8px; color: var(--term-muted); font-size: .7rem; font-weight: 500; }
+
+.theater-mode {
+  margin-left: auto;
+  padding: 2px 9px;
+  border: 1px solid rgb(74 222 128 / .4);
+  border-radius: 99px;
+  color: var(--term-ok);
+  font-size: .62rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.theater-mode.apply { border-color: rgb(251 191 36 / .45); color: var(--term-warn); }
+
+.theater-body {
+  min-height: 320px;
+  padding: 20px 22px 24px;
+  font-size: .78rem;
+  line-height: 1.75;
+}
+
+.tl {
+  display: block;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tl.show { opacity: 1; transform: none; }
+
+.tl .prompt { color: var(--term-accent); }
+.tl-cmd { color: var(--term-ink); }
+.tl-ok { color: var(--term-ok); }
+.tl-warn { color: var(--term-warn); }
+.tl-dim { color: var(--term-muted); }
+
+.tl-kv {
+  display: grid;
+  grid-template-columns: 175px 1fr;
+  gap: 0 16px;
+}
+
+.tl-kv b { color: var(--term-muted); font-weight: 400; }
+.tl-kv i { color: var(--term-ink); font-style: normal; }
+
+.tl-bar { display: flex; align-items: center; gap: 10px; color: var(--term-muted); }
+
+.tl-bar .bar {
+  position: relative;
+  flex: 1;
+  max-width: 260px;
+  height: 5px;
+  border-radius: 3px;
+  background: #21262d;
+  overflow: hidden;
+}
+
+.tl-bar .bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: var(--term-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .9s linear;
+}
+
+.tl-bar em { font-style: normal; min-width: 64px; }
+
+.tl-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--term-accent);
+  animation: cursor-blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes cursor-blink { 50% { opacity: 0; } }
+
+.theater-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.chip {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s var(--ease);
+}
+
+.chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.chip-accent { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
+.chip-accent:hover { border-color: var(--warn); background: rgb(234 179 8 / .08); }
+
+.theater-hint { margin-left: auto; color: var(--faint); font-size: .72rem; }
+
+/* ---------- cli playground ---------- */
+
+.cli-section {
+  display: grid;
+  grid-template-columns: .84fr 1.16fr;
+  gap: clamp(42px, 8vw, 110px);
+  align-items: center;
+  padding-block: 110px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.security-report-section {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: clamp(44px, 8vw, 120px);
+  align-items: start;
+  padding-block: 132px;
+  border-top: 1px solid var(--border);
+}
+
+.security-report-copy { max-width: 560px; }
+.security-report-copy h2 { max-width: 11ch; }
+.security-report-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+}
+.report-status { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: .9rem; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent); }
+.report-findings { margin-top: 24px; border-top: 1px solid var(--border); }
+.report-finding { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 17px 0; border-bottom: 1px solid var(--border); }
+.report-finding > span { color: var(--faint); font-family: var(--mono); font-size: .75rem; }
+.report-finding strong { font-size: .92rem; font-weight: 650; }
+.report-finding em { color: var(--accent); font-size: .72rem; font-style: normal; font-family: var(--mono); }
+.report-note { margin: 20px 0 0; color: var(--muted); font-size: .82rem; }
+
+.command-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 30px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.command-copy code { align-self: center; overflow: hidden; padding-left: 8px; color: var(--muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.command-copy button { min-height: 44px; border: 0; border-radius: var(--radius-sm); background: var(--panel); color: var(--ink); cursor: pointer; font-weight: 700; }
+.command-copy button.done { color: var(--success); }
+
+.playground { display: grid; gap: 12px; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip-row .chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.playground-terminal {
+  overflow: hidden;
+  border: 1px solid var(--term-border);
+  border-radius: var(--radius);
+  background: var(--term-bg);
+  color: var(--term-ink);
+  font-family: var(--mono);
+  box-shadow: 0 20px 58px rgb(0 0 0 / .2);
+}
+
+.playground-terminal .theater-body { min-height: 250px; }
+
+.playground-hint { color: var(--faint); font-size: .72rem; }
+
+/* ---------- product mini panels ---------- */
+
+.product-section { padding-block: 140px; }
+.product-heading { margin-bottom: 44px; }
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .85fr);
+  grid-template-areas: "health dedupe" "health alias";
+  gap: 18px;
+}
+
+.mini-panel[data-panel="health"] { grid-area: health; }
+.mini-panel[data-panel="dedupe"] { grid-area: dedupe; }
+.mini-panel[data-panel="alias"] { grid-area: alias; }
+
+.mini-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .25s ease, transform .25s var(--ease), box-shadow .25s ease;
+}
+
+.mini-panel:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform: translateY(-3px);
+  box-shadow: 0 14px 44px rgb(0 0 0 / .12);
+}
+
+.mini-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mini-panel h3 { margin: 0; font-size: .92rem; }
+
+.panel-badge {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--border));
+  border-radius: 99px;
+  color: var(--warn);
+  font-size: .58rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.panel-body { padding: 16px; }
+
+.panel-cmd {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .04em;
+}
+
+.hbar { display: grid; gap: 4px; margin-bottom: 12px; }
+.hbar .hbar-head { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); }
+.hbar .hbar-head b { color: var(--ink); font-weight: 600; }
+.hbar .track {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--panel-strong);
+  overflow: hidden;
+}
+
+[data-theme="light"] .hbar .track { background: var(--panel); }
+
+.hbar .fill {
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 1.1s var(--ease);
+}
+
+.hbar.warn .fill { background: var(--warn); }
+.hbar.danger .fill { background: var(--danger); }
+
+.dedupe-stage { position: relative; display: grid; gap: 9px; }
+
+.dupe-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: .72rem;
+  transition: opacity .45s ease, transform .45s var(--ease);
+}
+
+.dupe-card.a { border-color: color-mix(in srgb, var(--success) 55%, var(--border)); }
+.dupe-card .pill {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: .58rem;
+  font-weight: 700;
+}
+
+.dupe-card.b { animation: dedupe-cycle 6.5s var(--ease) infinite; }
+
+@keyframes dedupe-cycle {
+  0%, 30% { opacity: 1; transform: none; }
+  48%, 78% { opacity: 0; transform: translateX(18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+.dupe-result {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgb(34 197 94 / .1);
+  color: var(--success);
+  font-family: var(--mono);
+  font-size: .7rem;
+  opacity: 0;
+  animation: dupe-result-cycle 6.5s var(--ease) infinite;
+}
+
+@keyframes dupe-result-cycle {
+  0%, 46% { opacity: 0; transform: translateY(4px); }
+  58%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+.alias-term {
+  border: 1px solid var(--term-border);
+  border-radius: var(--radius-sm);
+  background: var(--term-bg);
+  color: var(--term-ink);
+  font-family: var(--mono);
+  font-size: .7rem;
+  line-height: 1.8;
+  padding: 12px 14px;
+  min-height: 148px;
+}
+
+.alias-term .prompt { color: var(--term-accent); }
+.alias-term .row { color: var(--term-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alias-term .row b { color: var(--term-ink); font-weight: 500; }
+.alias-term .mask { color: var(--term-warn); letter-spacing: .1em; }
+.alias-term .note { color: #6e7681; font-size: .62rem; }
+
+.capability-index {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr 1fr;
+  gap: 0;
+  margin-top: 34px;
+  border-top: 1px solid var(--border);
+}
+
+.capability-index article { padding: 24px 28px 24px 0; }
+.capability-index article + article { padding-left: 28px; border-left: 1px solid var(--border); }
+.capability-index h3 { margin-bottom: 7px; font-size: .96rem; }
+.capability-index p { margin: 0; color: var(--muted); font-size: .86rem; }
+.text-link { display: inline-block; margin-top: 32px; color: var(--accent-strong); }
+
+/* ---------- boundary flow ---------- */
+
+.boundary-section {
+  display: grid;
+  grid-template-columns: .72fr 1.28fr;
+  gap: clamp(42px, 8vw, 110px);
+  align-items: center;
+  padding-block: 120px;
+  border-top: 1px solid var(--border);
+}
+
+.boundary-flow {
+  display: grid;
+  grid-template-columns: 1fr 56px 1fr 56px 1fr;
+  align-items: stretch;
+}
+
+.flow-node {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .25s ease, transform .25s var(--ease);
+}
+
+.flow-node:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  transform: translateY(-2px);
+}
+
+.flow-node strong { font-size: .9rem; }
+.flow-node > span { color: var(--muted); font-size: .75rem; }
+
+.flow-badge {
+  justify-self: start;
+  padding: 2px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: .6rem;
+  font-weight: 700;
+}
+
+.flow-node.proxy .flow-badge {
+  border-color: color-mix(in srgb, var(--warn) 50%, var(--border));
+  background: rgb(234 179 8 / .08);
+  color: var(--warn);
+}
+
+.flow-decode {
+  overflow: hidden;
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.flow-link {
+  position: relative;
+  align-self: center;
+  height: 56px;
+}
+
+.flow-link .lane {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--border);
+}
+
+.flow-link .lane.top { top: 16px; }
+.flow-link .lane.bottom { bottom: 16px; }
+
+.packet {
+  position: absolute;
+  top: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--border));
+  border-radius: 7px;
+  background: var(--panel-strong);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: .56rem;
+  letter-spacing: .06em;
+}
+
+.packet.top {
+  left: 0;
+  animation: packet-right 3.2s linear infinite;
+  animation-play-state: paused;
+}
+
+.packet.bottom {
+  right: 0;
+  top: 39px;
+  animation: packet-left 3.2s linear infinite;
+  animation-play-state: paused;
+}
+
+.packet.d2 { animation-delay: -1.6s; }
+.boundary-flow.is-running .packet { animation-play-state: running; }
+
+@keyframes packet-right {
+  from { transform: translateX(-8px); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateX(34px); opacity: 0; }
+}
+
+@keyframes packet-left {
+  from { transform: translateX(8px); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateX(-34px); opacity: 0; }
+}
+
+.boundary-note { grid-column: 2; margin: 0; color: var(--faint); font-size: .78rem; }
+
+/* ---------- final ---------- */
+
+.final-section {
+  padding: 150px 0 130px;
+  border-top: 1px solid var(--border);
+}
+
+.final-section h2 { max-width: 13ch; font-size: clamp(2.6rem, 5.4vw, 5.7rem); }
+.final-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; margin-top: 38px; }
+
+.final-actions > .final-launch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0 4px;
+  border-bottom: 2px solid var(--accent);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 720;
+  letter-spacing: -.01em;
+  text-decoration: none;
+  transition: color .18s ease, border-color .18s ease;
+}
+
+.final-launch::after {
+  content: "→";
+  margin-left: 12px;
+  color: var(--accent);
+  font-size: 1.25rem;
+  transition: transform .18s var(--ease);
+}
+
+.final-launch:hover { color: var(--accent); border-color: transparent; }
+.final-launch:hover::after { transform: translateX(5px); }
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 28px;
+  border-top: 1px solid var(--border);
+  color: var(--faint);
+  font-size: .76rem;
+}
+
+/* ---------- reveal system ---------- */
+
+.motion-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(32px) scale(.985);
+  transition: opacity .85s var(--ease), transform .85s var(--ease);
+  transition-delay: calc(var(--pd, 0) * 120ms);
+}
+
+.motion-ready [data-reveal].in { opacity: 1; transform: none; }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .site-header { grid-template-columns: 1fr auto; }
+  .site-header nav { display: none; }
+  .hero { grid-template-columns: 1fr; min-height: auto; padding-block: 82px; }
+  .hero-copy { max-width: 680px; }
+  .cli-section, .boundary-section, .security-report-section { grid-template-columns: 1fr; }
+  .boundary-note { grid-column: 1; }
+  .header-launch { display: none; }
+  .vault-bridge { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .bridge-stage-head { grid-column: 1 / -1; }
+  .bridge-types { grid-column: 1 / -1; }
+  .bridge-type-list { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .bridge-type { grid-template-columns: 1fr; gap: 5px; min-height: 92px; }
+  .bridge-type > span { grid-row: auto; }
+  .bridge-type small { white-space: normal; }
+  .bridge-center, .bridge-access { border: 1px solid color-mix(in srgb, var(--border) 82%, transparent); }
+  .bridge-route-status { grid-column: 1 / -1; }
+  .panel-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "health" "dedupe" "alias";
+  }
+}
+
+@media (max-width: 767px) {
+  main > section, footer { width: min(100% - 32px, var(--max)); }
+  .site-header { padding-inline: 16px; }
+  .brand span { display: none; }
+  .hero { gap: 42px; padding-block: 44px 72px; }
+  h1 { max-width: 10ch; font-size: clamp(2.35rem, 11.4vw, 3.5rem); line-height: 1.02; }
+  .hero-lead { font-size: .98rem; }
+  .hero-actions { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 14px; }
+  .hero-launch { min-width: 0; width: 100%; }
+  .hero-secondary { padding-inline: 8px 0; }
+  .vault-window { min-height: 390px; }
+  .vault-body { grid-template-columns: 1fr; }
+  .vault-sidebar { display: none; }
+  .vault-main { padding: 12px; }
+  .vault-status { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .product-frame figcaption { display: grid; }
+  .vault-bridge-section { padding-block: 92px; }
+  .bridge-heading { margin-bottom: 36px; }
+  .vault-bridge { padding: 0; border: 0; }
+  .vault-bridge::before { inset: 24% -35% 18% 8%; }
+  .bridge-stage-head { align-items: flex-start; padding: 2px 2px 12px; }
+  .bridge-stage-head > span { max-width: 20ch; line-height: 1.45; }
+  .bridge-run { flex: 0 0 auto; gap: 8px; padding-left: 11px; }
+  .bridge-run i { width: 30px; height: 30px; }
+  .bridge-types, .bridge-center, .bridge-access { padding: 16px; }
+  .bridge-types { overflow: hidden; }
+  .bridge-type-list {
+    display: flex;
+    gap: 10px;
+    margin-inline: -16px;
+    padding: 0 16px 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .bridge-type-list::-webkit-scrollbar { display: none; }
+  .bridge-type {
+    flex: 0 0 224px;
+    grid-template-columns: 28px 1fr;
+    min-height: 74px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    scroll-snap-align: center;
+  }
+  .bridge-type > span { grid-row: 1 / 3; }
+  .bridge-type.active { padding-left: 16px; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+  .bridge-type::after { right: 12px; bottom: -1px; left: 12px; }
+  .bridge-center, .bridge-access { border: 1px solid color-mix(in srgb, var(--border) 82%, transparent); }
+  .bridge-center { grid-template-rows: auto auto 30px auto 30px; }
+  .bridge-vault-core { width: 138px; min-height: 138px; }
+  .bridge-field-preview { transform: rotate(-.5deg); }
+  .bridge-output { min-height: 200px; transform: none; }
+  .bridge-route-status { grid-column: 1; padding-bottom: 4px; line-height: 1.45; }
+  .bridge-route { height: 30px; }
+  .vault-universe {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    gap: 14px;
+    overflow: visible;
+    background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%);
+  }
+  .vault-scene { display: none; }
+  .bridge-vault-core { margin: 72px auto 32px; }
+  .bridge-types,
+  .bridge-access,
+  .bridge-vault-core,
+  .bridge-detail-dock { position: relative; inset: auto; width: auto; height: auto; }
+  .bridge-types { order: 1; padding: 16px; }
+  .bridge-types > .bridge-label { position: static; }
+  .bridge-type-list { position: static; margin-top: 14px; }
+  .bridge-type {
+    position: relative;
+    inset: auto !important;
+    transform: none !important;
+  }
+  .bridge-type:hover,
+  .bridge-type.active { transform: translateY(-3px) !important; }
+  .bridge-vault-core { order: 2; width: 154px; min-height: 154px; margin: 72px auto 48px; transform: none; }
+  .bridge-access { order: 3; padding: 16px; }
+  .bridge-interface-tabs { grid-template-columns: repeat(3, 1fr); }
+  .bridge-interface,
+  .bridge-interface:nth-child(2),
+  .bridge-interface:hover,
+  .bridge-interface:nth-child(2):hover,
+  .bridge-interface.active,
+  .bridge-interface:nth-child(2).active { min-height: 52px; padding: 0 10px; text-align: center; transform: none; }
+  .bridge-detail-dock { order: 4; display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .bridge-field-preview,
+  .bridge-output {
+    position: static;
+    width: auto;
+    min-height: 0;
+  }
+  .bridge-field-preview {
+    display: flex;
+    gap: 10px 16px;
+    padding: 12px 0;
+    overflow-x: auto;
+    transform: none;
+    scrollbar-width: none;
+  }
+  .bridge-field-preview::-webkit-scrollbar { display: none; }
+  .bridge-output { min-height: 142px; border-top: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); border-left: 0; }
+  .bridge-note { margin-top: 18px; text-align: left; }
+  .safety-section, .product-section { padding-block: 92px; }
+  .section-heading { margin-bottom: 38px; }
+  .safety-rail { grid-template-columns: 1fr; gap: 0; padding-left: 36px; margin-bottom: 40px; }
+  .safety-rail::before { top: 16px; bottom: 16px; left: 8px; right: auto; width: 2px; height: auto; }
+  .rail-progress { display: none; }
+  .gate { padding: 0 0 34px; }
+  .gate::before { top: 5px; left: -28px; }
+  .cli-section, .boundary-section, .security-report-section { gap: 42px; padding-block: 88px; }
+  .theater-body { min-height: 260px; }
+  .tl-kv { grid-template-columns: 132px 1fr; }
+  .command-copy { grid-template-columns: 1fr; }
+  .command-copy code { min-width: 0; padding: 6px 8px; }
+  .command-copy button { width: 100%; }
+  .chip-row { flex-wrap: nowrap; margin-inline: -16px; padding-inline: 16px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip-row .chip { flex: none; scroll-snap-align: start; }
+  .capability-index { grid-template-columns: 1fr; }
+  .capability-index article { padding: 22px 0; }
+  .capability-index article + article { padding-left: 0; border-top: 1px solid var(--border); border-left: 0; }
+  .boundary-flow { grid-template-columns: 1fr; gap: 8px; }
+  .flow-link { height: 34px; }
+  .flow-link .lane { left: calc(50% - 6px); right: auto; width: 2px; height: 30px; }
+  .flow-link .lane.top { top: 2px; }
+  .flow-link .lane.bottom { top: 2px; bottom: auto; left: calc(50% + 5px); }
+  .packet { width: 28px; }
+  .packet.top { top: 0; left: calc(50% - 34px); }
+  .packet.bottom { top: 20px; right: calc(50% - 34px); }
+  .packet.top { animation-name: packet-down; }
+  .packet.bottom { animation-name: packet-up; }
+  .final-section { padding-block: 100px; }
+  .final-actions { align-items: flex-start; flex-direction: column; }
+  footer { flex-direction: column; gap: 4px; }
+}
+
+@keyframes packet-down {
+  from { transform: translateY(-7px); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateY(27px); opacity: 0; }
+}
+
+@keyframes packet-up {
+  from { transform: translateY(7px); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateY(-27px); opacity: 0; }
+}
+
+@media (max-width: 420px) {
+  main > section, footer { width: min(100% - 28px, var(--max)); }
+  .site-header {
+    min-height: 60px;
+    padding-inline: 14px;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+  }
+  .brand img { width: 32px; height: 32px; }
+  .header-actions { gap: 6px; }
+  .icon-button { min-width: 40px; min-height: 40px; }
+  .hero {
+    min-height: auto;
+    gap: 30px;
+    padding-block: 30px 64px;
+  }
+  .eyebrow { margin-bottom: 14px; font-size: .69rem; letter-spacing: .07em; }
+  h1 {
+    max-width: none;
+    margin-bottom: 18px;
+    font-size: clamp(2.15rem, 9.5vw, 2.45rem);
+    line-height: .98;
+    letter-spacing: -.052em;
+    text-wrap: pretty;
+  }
+  .hero-lead { margin-bottom: 22px; font-size: .92rem; line-height: 1.65; }
+  .hero-actions { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; }
+  .hero-launch { min-height: 44px; min-width: 0; }
+  .hero-secondary { min-height: 44px; justify-content: flex-end; padding-inline: 4px 0; font-size: .86rem; }
+  .product-frame { border-radius: 10px; box-shadow: 0 18px 52px rgb(0 0 0 / .14); }
+  .vault-window { min-height: 0; grid-template-rows: 40px auto; }
+  .vault-titlebar strong { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vault-demo-badge { padding-inline: 6px; }
+  .vault-main { gap: 9px; padding: 10px; }
+  .vault-health { gap: 10px; padding: 8px 10px; }
+  .health-ring { width: 46px; height: 46px; }
+  .health-copy strong { font-size: .94rem; }
+  .vault-row { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; padding: 6px; }
+  .vault-row:nth-child(n + 5) { display: none; }
+  .vault-avatar { width: 22px; height: 22px; }
+  .vault-mask { font-size: .62rem; letter-spacing: .06em; }
+  .vault-status { min-height: 36px; padding: 7px 9px; }
+  .vault-status .note { display: none; }
+  .product-frame figcaption { display: flex; padding: 11px 12px; }
+  .product-frame figcaption small { display: none; }
+  .theater-body { min-height: 235px; padding: 16px 14px 20px; font-size: .7rem; }
+  .theater-actions { align-items: stretch; }
+  .theater-actions .chip { flex: 1 1 auto; }
+  .theater-hint { flex-basis: 100%; margin-left: 0; }
+  .flow-node { padding: 15px; }
+  .final-section h2 { font-size: clamp(2.35rem, 12vw, 3.3rem); }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .rail-progress { transform: scaleX(1); }
+  .gate::before { background: var(--accent); }
+  .motion-ready [data-reveal] { opacity: 1; transform: none; }
+  .hero-stagger, .vault-folder, .vault-row { opacity: 1; animation: none; }
+  .vault-row.merging { opacity: 1; transform: none; max-height: none; }
+  .dupe-card.b, .dupe-result { opacity: 1; animation: none; }
+  .packet { display: none; }
+  .vault-mask, .status-dot { animation: none; }
+}
+</style>
+  <style>html.landing-boot main,html.landing-boot footer,html.landing-boot .site-header{visibility:hidden}</style>
+</head>
+<body>
+  <div class="page-intro" id="page-intro" aria-hidden="true">
+    <img id="page-intro-logo" src="./assets/brand-logo-intro.svg" alt="" width="88" height="88">
+    <span>Bitwardenagents</span>
+  </div>
+  <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-fill"></span></div>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Bitwardenagents home">
+      <img src="./assets/brand-logo.svg" alt="" width="36" height="36">
+      <span>Bitwardenagents</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#safety" data-copy="nav.safety">安全护栏</a>
+      <a href="#proof" data-copy="nav.proof">真实能力</a>
+      <a href="#security-report" data-copy="nav.security">安全报告</a>
+      <a href="https://github.com/yancongya/bitwardenagents" data-copy="nav.source">源码</a>
+    </nav>
+    <div class="header-actions">
+      <button id="language-toggle" class="icon-button" type="button" aria-label="切换语言">EN</button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="切换主题"><span aria-hidden="true">◐</span></button>
+      <a class="header-launch" href="https://bitwardenagents.itycon.cn/dev/" data-page-transition data-copy="nav.open">打开密码库</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p data-copy="hero.eyebrow" class="eyebrow hero-stagger" style="--st:0">为 Agent 设计的 Bitwarden 工具</p>
+        <h1 data-copy="hero.title" class="hero-stagger" style="--st:1">Agent 整理密码，明文留在本地。</h1>
+        <p data-copy="hero.lead" class="hero-lead hero-stagger" style="--st:2">默认脱敏、先预演、再确认。把重复项、健康检查和基础设施凭据交给自动化，控制权仍在你手里。</p>
+        <div class="hero-actions hero-stagger" style="--st:3">
+          <a class="hero-launch" href="https://bitwardenagents.itycon.cn/dev/" data-page-transition><span data-copy="hero.primary">打开密码库</span><span aria-hidden="true">→</span></a>
+          <a class="hero-secondary" href="https://github.com/yancongya/bitwardenagents" data-copy="hero.secondary">查看源码</a>
+        </div>
+      </div>
+      <figure class="product-frame vault-frame hero-stagger" style="--st:4" id="vault-frame">
+        <div class="vault-window" id="vault-window" aria-label="实时演示面板"></div>
+        <figcaption><span data-copy="hero.visualLabel">实时演示面板</span><small data-copy="hero.visualNote">合成数据 · 未连接真实账户</small></figcaption>
+      </figure>
+    </section>
+
+    <section class="security-report-section" id="security-report">
+      <div class="security-report-copy" data-reveal>
+        <p data-copy="securityReport.eyebrow" class="eyebrow">安全审计记录</p>
+        <h2 data-copy="securityReport.title" >先公开问题，再公开修复结果。</h2>
+        <p data-copy="securityReport.lead" >我们按 OWASP WSTG/ASVS 与 CIS Docker Benchmark 做了源码、容器和 NAS 线上只读检查。本轮修复已部署到 NAS，并完成上线验证。</p>
+        <a class="text-link" href="./security-report.md" data-copy="securityReport.link">阅读安全报告</a>
+      </div>
+      <div class="security-report-panel" data-reveal>
+        <div class="report-status"><span class="status-dot"></span><strong data-copy="securityReport.status">已部署 · 线上验证通过</strong></div>
+        <div class="report-findings">
+          <div class="report-finding"><span>01</span><strong data-copy="securityReport.findings.0.title">会话写入已增加同源保护</strong><em data-copy="securityReport.findings.0.level">已缓解</em></div><div class="report-finding"><span>02</span><strong data-copy="securityReport.findings.1.title">解锁状态改为客户端绑定</strong><em data-copy="securityReport.findings.1.level">已缓解</em></div><div class="report-finding"><span>03</span><strong data-copy="securityReport.findings.2.title">HTTP 与容器加固已上线</strong><em data-copy="securityReport.findings.2.level">已验证</em></div><div class="report-finding"><span>04</span><strong data-copy="securityReport.findings.3.title">PIN 强 KDF 与限速已上线</strong><em data-copy="securityReport.findings.3.level">已验证</em></div>
+        </div>
+        <p class="report-note" data-copy="securityReport.note">没有读取或展示真实秘密，也没有执行线上写操作。</p>
+      </div>
+    </section>
+
+    <section class="vault-bridge-section" id="vault-native">
+      <div class="section-heading bridge-heading" data-reveal>
+        <h2 data-copy="vaultBridge.title" >一个密码库，人和 Agent 都能用</h2>
+        <p data-copy="vaultBridge.lead" >登录凭据、支付卡、身份信息、安全笔记和 SSH 密钥继续保存在 Bitwarden。Bitwardenagents 增加自托管 Web、Docker 与 CLI，不必再到处复制、粘贴和另存一份。</p>
+      </div>
+      <div class="vault-bridge" id="vault-bridge" data-reveal>
+        <div class="bridge-stage-head">
+          <span data-copy="vaultBridge.stageHint">选择一种内容和一个入口，亲手跑一次安全路由</span>
+          <button class="bridge-run" id="bridge-run" type="button"><span data-copy="vaultBridge.routeAction">运行路由</span><i aria-hidden="true">→</i></button>
+        </div>
+        <div class="vault-universe" id="vault-universe">
+          <canvas class="vault-scene" id="vault-scene" aria-hidden="true"></canvas>
+          <div class="bridge-types">
+            <p class="bridge-label" data-copy="vaultBridge.nativeLabel">Bitwarden 原生项目</p>
+            <div class="bridge-type-list" id="bridge-type-list" role="tablist" aria-label="Bitwarden 原生项目"></div>
+          </div>
+          <div class="bridge-vault-core" id="bridge-vault-core">
+            <img src="./assets/brand-logo.svg" alt="" width="48" height="48">
+            <strong>BITWARDEN VAULT</strong>
+            <span id="bridge-vault-state" data-copy="vaultBridge.encrypted">已加密</span>
+          </div>
+          <div class="bridge-access">
+            <div class="bridge-access-head">
+              <p class="bridge-label" data-copy="vaultBridge.accessLabel">Bitwardenagents 访问层</p>
+              <span data-copy="vaultBridge.synthetic">演示数据</span>
+            </div>
+            <div class="bridge-interface-tabs" id="bridge-interface-tabs" role="tablist" aria-label="Bitwardenagents 访问层"></div>
+          </div>
+          <div class="bridge-flight-layer" id="bridge-flight-layer" aria-hidden="true"></div>
+          <div class="bridge-detail-dock">
+            <div class="bridge-field-preview" id="bridge-field-preview" aria-live="polite"></div>
+            <div class="bridge-output" id="bridge-output" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="bridge-route-status" id="bridge-route-status" aria-live="polite"></div>
+      </div>
+      <p class="bridge-note" data-copy="vaultBridge.localNote">原始数据留在 Bitwarden，Agent 默认只获得脱敏结果。</p>
+    </section>
+
+    <section class="safety-section" id="safety">
+      <div class="section-heading" data-reveal>
+        <h2 data-copy="guardrails.title" >一次操作，要过四道护栏</h2>
+        <p data-copy="guardrails.lead" >这不是安全口号。下面这台终端在跑真实命令，四道护栏随执行依次点亮。</p>
+      </div>
+      <div class="safety-rail" aria-label="Four operation guardrails" data-reveal>
+        <div class="rail-progress" aria-hidden="true" id="rail-progress"></div>
+        
+  <article class="gate" style="--step:0" data-gate="0" tabindex="0" role="button">
+    <span class="gate-state" data-copy="guardrails.steps.0.state">INPUT</span>
+    <h3 data-copy="guardrails.steps.0.title">密钥不进 argv</h3>
+    <p data-copy="guardrails.steps.0.body">密码只从 stdin、隐藏输入或受控环境变量进入。</p>
+  </article>
+  <article class="gate" style="--step:1" data-gate="1" tabindex="0" role="button">
+    <span class="gate-state" data-copy="guardrails.steps.1.state">MASKED</span>
+    <h3 data-copy="guardrails.steps.1.title">输出默认脱敏</h3>
+    <p data-copy="guardrails.steps.1.body">密码、TOTP、卡号和私钥在普通输出中保持遮蔽。</p>
+  </article>
+  <article class="gate" style="--step:2" data-gate="2" tabindex="0" role="button">
+    <span class="gate-state" data-copy="guardrails.steps.2.state">DRY RUN</span>
+    <h3 data-copy="guardrails.steps.2.title">写操作先预演</h3>
+    <p data-copy="guardrails.steps.2.body">没有显式 --apply，管理命令只返回计划。</p>
+  </article>
+  <article class="gate" style="--step:3" data-gate="3" tabindex="0" role="button">
+    <span class="gate-state" data-copy="guardrails.steps.3.state">RECOVERABLE</span>
+    <h3 data-copy="guardrails.steps.3.title">删除默认可恢复</h3>
+    <p data-copy="guardrails.steps.3.body">普通删除进入回收站，永久清除需要额外确认。</p>
+  </article>
+      </div>
+      <div class="theater" id="theater" data-reveal>
+        <div class="theater-terminal">
+          <div class="terminal-bar">
+            <span></span><span></span><span></span>
+            <strong>bwvault</strong>
+            <em class="theater-mode" id="theater-mode" data-copy="theater.modeDry">预演模式</em>
+          </div>
+          <div class="theater-body" id="theater-body" aria-live="off"></div>
+        </div>
+        <div class="theater-actions">
+          <button class="chip" type="button" id="theater-replay" data-copy="theater.replay">重跑</button>
+          <button class="chip chip-accent" type="button" id="theater-apply" data-copy="theater.applyOn">演示确认 --apply</button>
+          <small class="theater-hint" data-copy="theater.gateHint">点击任意护栏可重放</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="cli-section" id="proof">
+      <div class="cli-copy" data-reveal>
+        <h2 data-copy="cli.title" >Web 管理，CLI 执行</h2>
+        <p data-copy="cli.lead" >同一套加密实现服务浏览器和命令行，Agent 得到机器可读结果，你保留明确的披露边界。</p>
+        <div class="command-copy">
+          <code>node agent-harness/bin/bwvault.js --help</code>
+          <button type="button" data-copy-command="node agent-harness/bin/bwvault.js --help" data-copy-label="cli.copy" data-copy-done="cli.copied">复制命令</button>
+        </div>
+      </div>
+      <div class="playground" data-reveal>
+        <div class="chip-row" id="playground-chips" role="tablist" aria-label="bwvault command groups"></div>
+        <div class="playground-terminal">
+          <div class="terminal-bar">
+            <span></span><span></span><span></span>
+            <strong>bwvault &lt;group&gt; --help</strong>
+          </div>
+          <div class="theater-body" id="playground-body"></div>
+        </div>
+        <small class="playground-hint" data-copy="cli.playgroundHint">点击命令组，查看真实 --help 输出</small>
+      </div>
+    </section>
+
+    <section class="product-section">
+      <div class="section-heading product-heading" data-reveal>
+        <h2 data-copy="product.title" >先看交互式演示，再决定是否连接</h2>
+        <p data-copy="product.lead" >演示模式沿用产品本身的渲染与分析流程。数据是合成的，交互不是截图摆设。</p>
+      </div>
+      <div class="panel-grid" id="panel-grid">
+        <article class="mini-panel" data-panel="health" data-reveal style="--pd:0">
+          <header><h3 data-copy="product.items.0.title">健康优先级</h3><em class="panel-badge" data-copy="product.panelBadge">合成数据</em></header>
+          <div class="panel-body" id="panel-health"></div>
+        </article>
+        <article class="mini-panel" data-panel="dedupe" data-reveal style="--pd:1">
+          <header><h3 data-copy="product.items.1.title">重复项整理</h3><em class="panel-badge" data-copy="product.panelBadge">合成数据</em></header>
+          <div class="panel-body" id="panel-dedupe"></div>
+        </article>
+        <article class="mini-panel" data-panel="alias" data-reveal style="--pd:2">
+          <header><h3 data-copy="product.items.2.title">稳定凭据别名</h3><em class="panel-badge" data-copy="product.panelBadge">合成数据</em></header>
+          <div class="panel-body" id="panel-alias"></div>
+        </article>
+      </div>
+      <div class="capability-index">
+  <article>
+    <h3 data-copy="product.items.0.title">健康优先级</h3>
+    <p data-copy="product.items.0.body">定位弱密码、复用、过期和缺失信息。</p>
+  </article>
+  <article>
+    <h3 data-copy="product.items.1.title">重复项整理</h3>
+    <p data-copy="product.items.1.body">先比较差异，再选择可恢复的清理路径。</p>
+  </article>
+  <article>
+    <h3 data-copy="product.items.2.title">稳定凭据别名</h3>
+    <p data-copy="product.items.2.body">Agent 用名称引用服务凭据，不必反复搜索和粘贴。</p>
+  </article></div>
+      <a class="text-link" href="https://bitwardenagents.itycon.cn/dev/" data-copy="product.cta">进入演示入口</a>
+    </section>
+
+    <section class="boundary-section">
+      <div class="boundary-copy" data-reveal>
+        <h2 data-copy="boundary.title" >明文停在本地</h2>
+        <p data-copy="boundary.lead" >浏览器完成密钥派生和密码库解密。代理只负责转发 Bitwarden 请求，不承担密码库明文存储。</p>
+      </div>
+      <div class="boundary-flow" id="boundary-flow" data-reveal></div>
+      <p data-copy="boundary.note" class="boundary-note">开源代码和 agent skill 都可以独立检查。</p>
+    </section>
+
+    <section class="final-section">
+      <p data-copy="final.eyebrow" class="eyebrow">控制权仍然属于你</p>
+      <h2 data-copy="final.title" >把整理工作交出去，把明文留在本地。</h2>
+      <div class="final-actions">
+        <a class="final-launch" href="https://bitwardenagents.itycon.cn/dev/" data-page-transition data-copy="final.primary">打开 Bitwardenagents</a>
+        <a href="https://github.com/yancongya/bitwardenagents" data-copy="final.source">阅读源码</a>
+        <a href="./skill.md" data-page-transition data-copy="final.skill">查看 Agent Skill</a>
+        <a href="./llms.txt" data-page-transition data-copy="final.llms">查看 llms.txt</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span data-copy="footer.note">开源的 Bitwarden 扩展管理工具</span>
+    <span data-copy="footer.privacy">无分析脚本，无广告追踪。</span>
+  </footer>
+  <script id="landing-data" type="application/json">[{"site":{"name":"Bitwardenagents","canonical":"https://bitwardenagents.itycon.cn/","productUrl":"https://bitwardenagents.itycon.cn/dev/","sourceUrl":"https://github.com/yancongya/bitwardenagents","readmeUrl":"https://github.com/yancongya/bitwardenagents#readme"},"zh":{"meta":{"title":"Bitwardenagents | 让 Agent 安全整理 Bitwarden","description":"用默认脱敏、dry-run、软删除和本地解密约束 Agent 的密码库操作。"},"nav":{"safety":"安全护栏","proof":"真实能力","security":"安全报告","source":"源码","open":"打开密码库","theme":"切换主题","language":"切换语言"},"hero":{"eyebrow":"为 Agent 设计的 Bitwarden 工具","title":"Agent 整理密码，明文留在本地。","lead":"默认脱敏、先预演、再确认。把重复项、健康检查和基础设施凭据交给自动化，控制权仍在你手里。","primary":"打开密码库","secondary":"查看源码","visualLabel":"实时演示面板","visualNote":"合成数据 · 未连接真实账户"},"heroWindow":{"windowTitle":"bwvault / demo","demoBadge":"合成数据","sidebarTitle":"文件夹","folders":[{"name":"开发工具","count":96},{"name":"云服务","count":54},{"name":"社交媒体","count":88},{"name":"金融理财","count":31},{"name":"工作相关","count":43}],"healthLabel":"健康分","healthCmd":"analyze health","itemsLabel":"条目","items":[{"site":"GitHub","user":"boss@itycon.cn","flag":"dupe"},{"site":"Cloudflare","user":"ops@itycon.cn","flag":null},{"site":"AWS Console","user":"root@itycon.cn","flag":"weak"},{"site":"GitHub","user":"boss@itycon.cn","flag":"dupe"},{"site":"微信","user":"138****8890","flag":null},{"site":"Google Cloud","user":"dev@itycon.cn","flag":"reuse"},{"site":"知乎","user":"boss@itycon.cn","flag":null}],"flags":{"dupe":"重复","weak":"弱密码","reuse":"复用"},"scanScanning":"Agent 扫描中…","scanFound":"发现 2 个重复项","scanReady":"预演完成 · 等待你确认","scanMerged":"已合并 1 条 · 可从回收站恢复","maskNote":"密码保持脱敏"},"vaultBridge":{"title":"一个密码库，人和 Agent 都能用","lead":"登录凭据、支付卡、身份信息、安全笔记和 SSH 密钥继续保存在 Bitwarden。Bitwardenagents 增加自托管 Web、Docker 与 CLI，不必再到处复制、粘贴和另存一份。","nativeLabel":"Bitwarden 原生项目","vaultLabel":"同一座加密密码库","accessLabel":"Bitwardenagents 访问层","synthetic":"演示数据","encrypted":"已加密","localNote":"原始数据留在 Bitwarden，Agent 默认只获得脱敏结果。","stageHint":"选择一种内容和一个入口，亲手跑一次安全路由","routeAction":"运行路由","routeReady":"已选择：{type} → {interface}","routeRunning":"正在加密转交…","routeDone":"{type} 已通过 {interface} 返回脱敏结果","types":[{"id":"login","index":"01","name":"登录凭据","detail":"用户名、密码、URI、TOTP 与通行密钥","sample":["account","ops@itycon.cn","password","••••••••","totp","••••••"]},{"id":"card","index":"02","name":"支付卡","detail":"持卡人、卡号、有效期与安全码","sample":["holder","T. Yan","number","•••• 4242","cvv","•••"]},{"id":"identity","index":"03","name":"身份信息","detail":"姓名、地址、联系方式与证件字段","sample":["name","T. Yan","address","••••••••","id","••••••"]},{"id":"note","index":"04","name":"安全笔记","detail":"恢复码、授权信息和私密文本","sample":["title","Recovery codes","content","••••••••","status","stored"]},{"id":"ssh","index":"05","name":"SSH 密钥","detail":"私钥、公钥与指纹","sample":["host","nas.local","private","••••••••","fingerprint","SHA256:••••"]}],"interfaces":[{"id":"web","name":"Web","detail":"在浏览器中查看、整理与编辑原生项目。","command":"打开 /dev/ 管理面板","result":"五类项目统一浏览"},{"id":"docker","name":"Docker","detail":"在 NAS 持久化会话，容器重启后使用 PIN 解锁。","command":"BWVAULT_HOME=/data/session","result":"session  persisted"},{"id":"agent","name":"Agent CLI","detail":"Agent 使用稳定别名和机器可读输出，秘密默认不返回。","command":"bwvault credential list --json","result":"cloudflare.itycon.dns  stored  masked"}]},"guardrails":{"title":"一次操作，要过四道护栏","lead":"这不是安全口号。下面这台终端在跑真实命令，四道护栏随执行依次点亮。","steps":[{"state":"INPUT","title":"密钥不进 argv","body":"密码只从 stdin、隐藏输入或受控环境变量进入。"},{"state":"MASKED","title":"输出默认脱敏","body":"密码、TOTP、卡号和私钥在普通输出中保持遮蔽。"},{"state":"DRY RUN","title":"写操作先预演","body":"没有显式 --apply，管理命令只返回计划。"},{"state":"RECOVERABLE","title":"删除默认可恢复","body":"普通删除进入回收站，永久清除需要额外确认。"}]},"theater":{"replay":"重跑","applyOn":"演示确认 --apply","applyOff":"返回预演","modeDry":"预演模式","modeApply":"执行模式","gateHint":"点击任意护栏可重放","dry":[{"t":"cmd","text":"bwvault manage dedup --dry-run"},{"t":"bar","label":"decrypting","max":312},{"t":"out","text":"✓ decrypted locally / secrets never enter argv","cls":"ok","gate":0},{"t":"out","text":"Dry run: 3 duplicate groups, 5 items would be soft-deleted.","gate":2},{"t":"out","text":"Re-run with --apply to execute.","cls":"dim"},{"t":"kv","rows":[["Mode","dry-run (no changes made)"],["Duplicate groups","3"],["Items to soft-delete","5"]],"gate":1},{"t":"out","text":"keep    GitHub / boss@itycon.cn","cls":"ok"},{"t":"out","text":"remove  GitHub (2021-06-13) / soft-delete → trash","cls":"warn","gate":3}],"apply":[{"t":"cmd","text":"bwvault manage dedup --apply"},{"t":"out","text":"confirm: 5 items will be soft-deleted [y/N]","cls":"dim"},{"t":"key","text":"y"},{"t":"bar","label":"soft-deleting","max":5},{"t":"out","text":"✓ Soft-deleted 5 duplicate items. Recoverable from trash.","cls":"ok","gate":3}]},"cli":{"title":"Web 管理，CLI 执行","lead":"同一套加密实现服务浏览器和命令行，Agent 得到机器可读结果，你保留明确的披露边界。","command":"node agent-harness/bin/bwvault.js --help","copy":"复制命令","copied":"已复制","playgroundHint":"点击命令组，查看真实 --help 输出","runs":{"auth":["login     Sign in (--api-key | --password)","logout    Clear the stored session","status    Show session info (never prints secrets)"],"vault":["sync      Pull the latest vault from the server","list      List entries (secrets redacted unless --reveal)","search    Search entries by name/username/URI","get       Show one entry in full (redacted unless --reveal)","folders   List folders"],"analyze":["health      Weak / empty / reused / stale passwords","duplicates  Duplicate and same-site clusters","urls        Dead-link candidates"],"manage":["dedup     Merge duplicate entries (soft-delete, recoverable)","trash     list | restore | purge  (purge is irreversible)","folders   create | rename | delete"],"credential":["list      List aliases and metadata (never returns secrets)","set       Create or update an alias (secret via stdin/prompt/env)"]},"groups":[{"name":"auth","description":"Authenticate and manage the local session"},{"name":"vault","description":"Inspect and move data"},{"name":"analyze","description":"Read-only reporting (no vault mutation)"},{"name":"manage","description":"Mutating operations (all support --dry-run)"},{"name":"credential","description":"Store service credentials by stable alias"}]},"product":{"title":"先看交互式演示，再决定是否连接","lead":"演示模式沿用产品本身的渲染与分析流程。数据是合成的，交互不是截图摆设。","imageAlt":"Bitwardenagents 演示模式总览，显示健康分析和密码库整理入口","items":[{"title":"健康优先级","body":"定位弱密码、复用、过期和缺失信息。"},{"title":"重复项整理","body":"先比较差异，再选择可恢复的清理路径。"},{"title":"稳定凭据别名","body":"Agent 用名称引用服务凭据，不必反复搜索和粘贴。"}],"cta":"进入演示入口","panelBadge":"合成数据","healthBars":[{"label":"弱密码","value":14},{"label":"复用密码","value":9},{"label":"过期凭据","value":5},{"label":"信息缺失","value":7}],"healthCmd":"analyze health","dedupe":{"cardA":"GitHub · boss@itycon.cn","cardB":"GitHub · 副本（2021-06 创建）","keep":"保留","merge":"合并 · 软删除","result":"B → 回收站 · 可恢复"},"dedupeCmd":"manage dedup","alias":{"cmd":"bwvault credential list","rows":[["cloudflare.dns.token","ops@itycon.cn","api.cloudflare.com"],["github.ci","boss@itycon.cn","github.com"],["nas.ssh","tycon","ssh://nas"]],"masked":"●●●●●●●●","note":"元数据可见 · 秘密永不返回"}},"securityReport":{"eyebrow":"安全审计记录","title":"先公开问题，再公开修复结果。","lead":"我们按 OWASP WSTG/ASVS 与 CIS Docker Benchmark 做了源码、容器和 NAS 线上只读检查。本轮修复已部署到 NAS，并完成上线验证。","link":"阅读安全报告","status":"已部署 · 线上验证通过","note":"没有读取或展示真实秘密，也没有执行线上写操作。","findings":[{"title":"会话写入已增加同源保护","level":"已缓解"},{"title":"解锁状态改为客户端绑定","level":"已缓解"},{"title":"HTTP 与容器加固已上线","level":"已验证"},{"title":"PIN 强 KDF 与限速已上线","level":"已验证"}]},"boundary":{"title":"明文停在本地","lead":"浏览器完成密钥派生和密码库解密。代理只负责转发 Bitwarden 请求，不承担密码库明文存储。","nodes":[{"name":"你的浏览器","detail":"派生密钥，解密数据"},{"name":"请求代理","detail":"转发官方 API 请求"},{"name":"Bitwarden","detail":"账户与加密密码库"}],"cipher":"密文","browserBadge":"密钥派生 · 本地解密","proxyBadge":"仅转发 · 不解密","note":"开源代码和 agent skill 都可以独立检查。"},"final":{"eyebrow":"控制权仍然属于你","title":"把整理工作交出去，把明文留在本地。","primary":"打开 Bitwardenagents","source":"阅读源码","skill":"查看 Agent Skill","llms":"查看 llms.txt"},"footer":{"note":"开源的 Bitwarden 扩展管理工具","privacy":"无分析脚本，无广告追踪。"}},"en":{"meta":{"title":"Bitwardenagents | Safe Bitwarden work for agents","description":"Constrain agent vault operations with redaction, dry runs, recoverable deletion, and local decryption."},"nav":{"safety":"Guardrails","proof":"Real capability","security":"Security report","source":"Source","open":"Open vault","theme":"Toggle theme","language":"Switch language"},"hero":{"eyebrow":"A Bitwarden tool built for agents","title":"Agents organize. Plaintext stays local.","lead":"Redacted by default. Preview first, confirm second. Delegate duplicates, health checks, and infrastructure credentials while keeping control.","primary":"Open vault","secondary":"View source","visualLabel":"Live demo panel","visualNote":"Synthetic data · no real account connection"},"heroWindow":{"windowTitle":"bwvault / demo","demoBadge":"Synthetic data","sidebarTitle":"Folders","folders":[{"name":"Dev tools","count":96},{"name":"Cloud","count":54},{"name":"Social","count":88},{"name":"Finance","count":31},{"name":"Work","count":43}],"healthLabel":"Health score","healthCmd":"analyze health","itemsLabel":"items","items":[{"site":"GitHub","user":"boss@itycon.cn","flag":"dupe"},{"site":"Cloudflare","user":"ops@itycon.cn","flag":null},{"site":"AWS Console","user":"root@itycon.cn","flag":"weak"},{"site":"GitHub","user":"boss@itycon.cn","flag":"dupe"},{"site":"WeChat","user":"138****8890","flag":null},{"site":"Google Cloud","user":"dev@itycon.cn","flag":"reuse"},{"site":"Zhihu","user":"boss@itycon.cn","flag":null}],"flags":{"dupe":"duplicate","weak":"weak","reuse":"reused"},"scanScanning":"Agent scanning…","scanFound":"2 duplicates found","scanReady":"Preview ready · waiting for your confirmation","scanMerged":"Merged 1 · recoverable from trash","maskNote":"Passwords stay masked"},"vaultBridge":{"title":"One vault for you and your agents","lead":"Logins, cards, identities, secure notes, and SSH keys stay in Bitwarden. Bitwardenagents adds self-hosted Web, Docker, and CLI access without scattered copies.","nativeLabel":"Native Bitwarden items","vaultLabel":"One encrypted vault","accessLabel":"Bitwardenagents access layer","synthetic":"Synthetic data","encrypted":"Encrypted","localNote":"Original data stays in Bitwarden. Agents receive redacted output by default.","stageHint":"Choose an item and an interface, then run the secure route","routeAction":"Run route","routeReady":"Selected: {type} → {interface}","routeRunning":"Routing encrypted data…","routeDone":"{type} returned a redacted result through {interface}","types":[{"id":"login","index":"01","name":"Logins","detail":"Username, password, URI, TOTP, and passkeys","sample":["account","ops@itycon.cn","password","••••••••","totp","••••••"]},{"id":"card","index":"02","name":"Cards","detail":"Cardholder, number, expiry, and security code","sample":["holder","T. Yan","number","•••• 4242","cvv","•••"]},{"id":"identity","index":"03","name":"Identities","detail":"Names, addresses, contact details, and IDs","sample":["name","T. Yan","address","••••••••","id","••••••"]},{"id":"note","index":"04","name":"Secure notes","detail":"Recovery codes, authorization data, and private text","sample":["title","Recovery codes","content","••••••••","status","stored"]},{"id":"ssh","index":"05","name":"SSH keys","detail":"Private key, public key, and fingerprint","sample":["host","nas.local","private","••••••••","fingerprint","SHA256:••••"]}],"interfaces":[{"id":"web","name":"Web","detail":"Browse, organize, and edit native item types in the browser.","command":"Open the /dev/ management panel","result":"five item types in one view"},{"id":"docker","name":"Docker","detail":"Persist the session on NAS and unlock with a PIN after restart.","command":"BWVAULT_HOME=/data/session","result":"session  persisted"},{"id":"agent","name":"Agent CLI","detail":"Agents use stable aliases and machine-readable output. Secrets stay hidden by default.","command":"bwvault credential list --json","result":"cloudflare.itycon.dns  stored  masked"}]},"guardrails":{"title":"Every operation passes four gates","lead":"Not a slogan. The terminal below runs a real command; the gates light up as it executes.","steps":[{"state":"INPUT","title":"Secrets stay out of argv","body":"Passwords enter through stdin, hidden prompts, or controlled environment variables."},{"state":"MASKED","title":"Output is redacted","body":"Passwords, TOTP codes, card numbers, and private keys stay masked."},{"state":"DRY RUN","title":"Writes preview first","body":"Without explicit --apply, management commands return a plan only."},{"state":"RECOVERABLE","title":"Deletion is recoverable","body":"Normal deletion moves items to trash. Purging needs extra confirmation."}]},"theater":{"replay":"Replay","applyOn":"Confirm demo --apply","applyOff":"Back to dry run","modeDry":"Dry run","modeApply":"Apply","gateHint":"Click any gate to replay","dry":[{"t":"cmd","text":"bwvault manage dedup --dry-run"},{"t":"bar","label":"decrypting","max":312},{"t":"out","text":"✓ decrypted locally / secrets never enter argv","cls":"ok","gate":0},{"t":"out","text":"Dry run: 3 duplicate groups, 5 items would be soft-deleted.","gate":2},{"t":"out","text":"Re-run with --apply to execute.","cls":"dim"},{"t":"kv","rows":[["Mode","dry-run (no changes made)"],["Duplicate groups","3"],["Items to soft-delete","5"]],"gate":1},{"t":"out","text":"keep    GitHub / boss@itycon.cn","cls":"ok"},{"t":"out","text":"remove  GitHub (2021-06-13) / soft-delete → trash","cls":"warn","gate":3}],"apply":[{"t":"cmd","text":"bwvault manage dedup --apply"},{"t":"out","text":"confirm: 5 items will be soft-deleted [y/N]","cls":"dim"},{"t":"key","text":"y"},{"t":"bar","label":"soft-deleting","max":5},{"t":"out","text":"✓ Soft-deleted 5 duplicate items. Recoverable from trash.","cls":"ok","gate":3}]},"cli":{"title":"Manage in Web. Execute in CLI.","lead":"One encryption implementation serves the browser and command line. Agents get machine-readable results while disclosure stays explicit.","command":"node agent-harness/bin/bwvault.js --help","copy":"Copy command","copied":"Copied","playgroundHint":"Click a command group to see its real --help output","runs":{"auth":["login     Sign in (--api-key | --password)","logout    Clear the stored session","status    Show session info (never prints secrets)"],"vault":["sync      Pull the latest vault from the server","list      List entries (secrets redacted unless --reveal)","search    Search entries by name/username/URI","get       Show one entry in full (redacted unless --reveal)","folders   List folders"],"analyze":["health      Weak / empty / reused / stale passwords","duplicates  Duplicate and same-site clusters","urls        Dead-link candidates"],"manage":["dedup     Merge duplicate entries (soft-delete, recoverable)","trash     list | restore | purge  (purge is irreversible)","folders   create | rename | delete"],"credential":["list      List aliases and metadata (never returns secrets)","set       Create or update an alias (secret via stdin/prompt/env)"]},"groups":[{"name":"auth","description":"Authenticate and manage the local session"},{"name":"vault","description":"Inspect and move data"},{"name":"analyze","description":"Read-only reporting (no vault mutation)"},{"name":"manage","description":"Mutating operations (all support --dry-run)"},{"name":"credential","description":"Store service credentials by stable alias"}]},"product":{"title":"Try the interactive demo before connecting","lead":"Demo mode uses the product's own rendering and analysis flow. The data is synthetic. The interaction is real.","imageAlt":"Bitwardenagents demo overview showing vault health and maintenance actions","items":[{"title":"Health priorities","body":"Find weak, reused, stale, and incomplete credentials."},{"title":"Duplicate cleanup","body":"Review differences before choosing a recoverable cleanup path."},{"title":"Stable credential aliases","body":"Agents address service credentials by name instead of repeated copy and paste."}],"cta":"Open demo entry","panelBadge":"Synthetic data","healthBars":[{"label":"Weak passwords","value":14},{"label":"Reused passwords","value":9},{"label":"Stale credentials","value":5},{"label":"Missing fields","value":7}],"healthCmd":"analyze health","dedupe":{"cardA":"GitHub · boss@itycon.cn","cardB":"GitHub · copy (created 2021-06)","keep":"keep","merge":"merge · soft-delete","result":"B → trash · recoverable"},"dedupeCmd":"manage dedup","alias":{"cmd":"bwvault credential list","rows":[["cloudflare.dns.token","ops@itycon.cn","api.cloudflare.com"],["github.ci","boss@itycon.cn","github.com"],["nas.ssh","tycon","ssh://nas"]],"masked":"●●●●●●●●","note":"Metadata visible · secrets never returned"}},"securityReport":{"eyebrow":"Security audit record","title":"Publish the findings before the finish line.","lead":"We reviewed the source, container, and NAS surface through OWASP WSTG/ASVS and the CIS Docker Benchmark. The fixes are deployed to the NAS and passed the production checks.","link":"Read security report","status":"Deployed · production verified","note":"No real secrets were read or displayed, and no production write operation was executed.","findings":[{"title":"Session writes now require same-origin requests","level":"Mitigated"},{"title":"Unlock state is client-bound","level":"Mitigated"},{"title":"HTTP and container hardening are live","level":"Verified"},{"title":"PIN KDF and rate limiting are live","level":"Verified"}]},"boundary":{"title":"Plaintext stops locally","lead":"The browser derives keys and decrypts the vault. The proxy forwards Bitwarden requests and does not store vault plaintext.","nodes":[{"name":"Your browser","detail":"Derive keys and decrypt data"},{"name":"Request proxy","detail":"Forward official API requests"},{"name":"Bitwarden","detail":"Account and encrypted vault"}],"cipher":"ciphertext","browserBadge":"key derivation · local decrypt","proxyBadge":"forwards only · never decrypts","note":"The source and agent skill remain independently inspectable."},"final":{"eyebrow":"Control remains yours","title":"Delegate the cleanup. Keep plaintext local.","primary":"Open Bitwardenagents","source":"Read source","skill":"View Agent Skill","llms":"View llms.txt"},"footer":{"note":"An open-source Bitwarden management extension","privacy":"No analytics scripts. No advertising trackers."}}}]</script>
+  <script src="./assets/gsap.min.js"></script>
+  <script type="module">import * as THREE from './assets/three.module.min.js'; window.THREE = THREE; (() => {
+  const data = JSON.parse(document.querySelector('#landing-data').textContent)[0];
+  const root = document.documentElement;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const storedTheme = localStorage.getItem('bitwardenagents-landing-theme');
+  const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let locale = localStorage.getItem('bitwardenagents-landing-locale') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+
+  const t = (path) => path.split('.').reduce((v, k) => v?.[k], data[locale]);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (s) => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+  function el(tag, cls, html) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (html != null) node.innerHTML = html;
+    return node;
+  }
+
+  /* ---------------- one-shot SVG page intro ---------------- */
+
+  const pageIntro = document.querySelector('#page-intro');
+  const pageIntroLogo = document.querySelector('#page-intro-logo');
+  let introRun = 0;
+
+  function replayPageIntro() {
+    if (!pageIntro || !pageIntroLogo || reduced) return Promise.resolve();
+    introRun += 1;
+    pageIntroLogo.src = `./assets/brand-logo-intro.svg#run-${introRun}`;
+    pageIntro.classList.add('is-active');
+    return sleep(2180).then(() => {
+      pageIntro.classList.remove('is-active');
+      return sleep(220);
+    });
+  }
+
+  if (reduced) {
+    pageIntro?.classList.remove('is-active');
+    root.classList.remove('landing-boot');
+  } else {
+    pageIntro?.classList.add('is-active');
+    window.setTimeout(() => {
+      pageIntro?.classList.remove('is-active');
+      root.classList.remove('landing-boot');
+    }, 2300);
+  }
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="#"], a[data-page-transition]');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const href = link.getAttribute('href');
+    const target = href.startsWith('#') ? document.querySelector(href) : null;
+    if ((href.startsWith('#') && !target) || reduced) return;
+    event.preventDefault();
+    replayPageIntro().then(() => {
+      if (target) {
+        history.pushState(null, '', href);
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      } else {
+        window.location.assign(link.href);
+      }
+    });
+  });
+
+  /* ---------------- theme / language ---------------- */
+
+  function setTheme(theme) {
+    root.dataset.theme = theme;
+    localStorage.setItem('bitwardenagents-landing-theme', theme);
+  }
+
+  function renderLanguage() {
+    root.lang = locale === 'zh' ? 'zh-CN' : 'en';
+    document.title = data[locale].meta.title;
+    document.querySelector('meta[name="description"]').content = data[locale].meta.description;
+    document.querySelectorAll('[data-copy]').forEach((node) => {
+      const value = t(node.dataset.copy);
+      if (value != null && typeof value !== 'object') node.textContent = value;
+    });
+    document.querySelectorAll('[data-copy-label]').forEach((button) => {
+      button.textContent = t(button.dataset.copyLabel);
+    });
+    document.querySelector('#language-toggle').textContent = locale === 'zh' ? 'EN' : '中';
+    document.querySelector('#language-toggle').setAttribute('aria-label', data[locale].nav.language);
+    document.querySelector('#theme-toggle').setAttribute('aria-label', data[locale].nav.theme);
+    renderVault();
+    if (vaultPlayed || reduced) vaultFinalState();
+    renderVaultBridge();
+    renderFlow();
+    renderPanels();
+    renderChips();
+    theaterMode = 'dry';
+    syncTheaterControls();
+    theaterRun(true);
+    playgroundRun(activeGroup, { instant: true });
+  }
+
+  setTheme(storedTheme || (preferredDark ? 'dark' : 'light'));
+
+  document.querySelector('#theme-toggle').addEventListener('click', () => {
+    setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+
+  document.querySelector('#language-toggle').addEventListener('click', () => {
+    locale = locale === 'zh' ? 'en' : 'zh';
+    localStorage.setItem('bitwardenagents-landing-locale', locale);
+    renderLanguage();
+  });
+
+  document.querySelectorAll('[data-copy-command]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const text = button.dataset.copyCommand;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.append(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+      }
+      button.textContent = t(button.dataset.copyDone);
+      button.classList.add('done');
+      window.setTimeout(() => {
+        button.textContent = t(button.dataset.copyLabel);
+        button.classList.remove('done');
+      }, 1400);
+    });
+  });
+
+  /* ---------------- scroll progress + reveal ---------------- */
+
+  if (!reduced && 'IntersectionObserver' in window) {
+    root.classList.add('motion-ready');
+    const revealIO = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          revealIO.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.12 });
+    document.querySelectorAll('[data-reveal]').forEach((node) => revealIO.observe(node));
+  }
+
+  /* ---------------- vault window (hero) ---------------- */
+
+  const RING_R = 21;
+  const RING_C = 2 * Math.PI * RING_R;
+  const HEALTH_SCORE = 87;
+  let vaultGen = 0;
+  let vaultVisible = false;
+  let vaultPlayed = false;
+
+  function renderVault() {
+    const w = t('heroWindow');
+    const host = document.querySelector('#vault-window');
+    if (!host) return;
+    host.innerHTML = '';
+
+    const bar = el('div', 'vault-titlebar');
+    bar.append(el('span'), el('span'), el('span'), el('strong', null, esc(w.windowTitle)), el('em', 'vault-demo-badge', esc(w.demoBadge)));
+
+    const side = el('aside', 'vault-sidebar');
+    side.append(el('p', 'vault-sidebar-title', esc(w.sidebarTitle)));
+    w.folders.forEach((folder, i) => {
+      const node = el('div', 'vault-folder' + (i === 0 ? ' active' : ''));
+      node.style.setProperty('--f', i);
+      node.innerHTML = `<span>${esc(folder.name)}</span><em>${folder.count}</em>`;
+      side.append(node);
+    });
+
+    const main = el('div', 'vault-main');
+    const health = el('div', 'vault-health');
+    health.innerHTML = `
+      <svg class="health-ring" viewBox="0 0 52 52" aria-hidden="true">
+        <circle class="track" cx="26" cy="26" r="${RING_R}" fill="none" stroke-width="4"/>
+        <circle class="fill" cx="26" cy="26" r="${RING_R}" fill="none" stroke-width="4"
+          stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"/>
+      </svg>
+      <div class="health-copy">
+        <strong>${esc(w.healthLabel)} <span class="score-num">0</span>/100</strong>
+        <small>${esc(w.healthCmd)}</small>
+      </div>`;
+
+    const list = el('ul', 'vault-list');
+    w.items.forEach((item, i) => {
+      const row = el('li', 'vault-row');
+      row.style.setProperty('--i', i);
+      if (item.flag) row.dataset.flag = item.flag;
+      row.innerHTML = `
+        <span class="vault-avatar">${esc(item.site[0].toUpperCase())}</span>
+        <span class="vault-id"><strong>${esc(item.site)}</strong><span>${esc(item.user)}</span></span>
+        ${item.flag ? `<em class="vault-flag">${esc(w.flags[item.flag])}</em>` : '<span class="vault-mask">••••••••</span>'}`;
+      list.append(row);
+    });
+
+    const status = el('div', 'vault-status');
+    status.innerHTML = `
+      <span class="state"><span class="status-dot"></span><span class="status-text">${esc(w.scanScanning)}</span></span>
+      <span class="note">${esc(w.maskNote)}</span>`;
+
+    main.append(health, list, status);
+    const body = el('div', 'vault-body');
+    body.append(side, main);
+    host.append(bar, body);
+  }
+
+  function vaultFinalState() {
+    const host = document.querySelector('#vault-window');
+    const fill = host.querySelector('.health-ring .fill');
+    const rows = [...host.querySelectorAll('.vault-row')];
+    host.querySelector('.score-num').textContent = HEALTH_SCORE;
+    fill.style.strokeDashoffset = RING_C * (1 - HEALTH_SCORE / 100);
+    const dupes = rows.filter((r) => r.dataset.flag === 'dupe');
+    dupes.forEach((row) => row.classList.add('dupe'));
+    const status = host.querySelector('.vault-status');
+    status.querySelector('.status-text').textContent = t('heroWindow.scanReady');
+    status.querySelector('.status-dot').classList.add('ready');
+  }
+
+  async function vaultLoop() {
+    const gen = ++vaultGen;
+    const w = t('heroWindow');
+    const host = document.querySelector('#vault-window');
+    const fill = host.querySelector('.health-ring .fill');
+    const score = host.querySelector('.score-num');
+    const statusText = host.querySelector('.status-text');
+    const dot = host.querySelector('.status-dot');
+    const rows = [...host.querySelectorAll('.vault-row')];
+    const dupes = rows.filter((r) => r.dataset.flag === 'dupe');
+
+    if (gen === vaultGen && host.isConnected && vaultVisible) {
+      rows.forEach((r) => r.classList.remove('scanned', 'dupe', 'kept', 'merging'));
+      dot.classList.remove('ok', 'ready');
+      statusText.textContent = w.scanScanning;
+      fill.style.strokeDashoffset = RING_C;
+      score.textContent = '0';
+      await sleep(700);
+      if (gen !== vaultGen) return;
+
+      const start = performance.now();
+      const dur = reduced ? 0 : 1400;
+      await new Promise((resolve) => {
+        const tick = (now) => {
+          if (gen !== vaultGen) return resolve();
+          const p = dur === 0 ? 1 : Math.min(1, (now - start) / dur);
+          const eased = 1 - Math.pow(1 - p, 3);
+          score.textContent = Math.round(HEALTH_SCORE * eased);
+          fill.style.strokeDashoffset = RING_C * (1 - (HEALTH_SCORE / 100) * eased);
+          if (p < 1) requestAnimationFrame(tick);
+          else resolve();
+        };
+        requestAnimationFrame(tick);
+      });
+      if (gen !== vaultGen) return;
+
+      statusText.textContent = w.scanScanning;
+      for (const row of rows) {
+        if (gen !== vaultGen) return;
+        row.classList.add('scanned');
+        await sleep(reduced ? 0 : 300);
+        row.classList.remove('scanned');
+        await sleep(reduced ? 0 : 90);
+      }
+
+      await sleep(260);
+      if (gen !== vaultGen) return;
+      dupes.forEach((r) => r.classList.add('dupe'));
+      statusText.textContent = w.scanFound;
+      await sleep(reduced ? 0 : 900);
+      if (gen !== vaultGen) return;
+      statusText.textContent = w.scanReady;
+      dot.classList.add('ready');
+    }
+  }
+
+  function watchVault() {
+    const host = document.querySelector('#vault-frame');
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const was = vaultVisible;
+        vaultVisible = entry.isIntersecting;
+        if (vaultVisible && !was && !vaultPlayed) {
+          vaultPlayed = true;
+          vaultLoop();
+        }
+      }
+    }, { threshold: 0.25 });
+    io.observe(host);
+  }
+
+  /* ---------------- native vault + agent access ---------------- */
+
+  let bridgeTypeId = '/not-initialized';
+  let bridgeInterfaceId = 'agent';
+  let bridgeAnimation = 0;
+  let bridgeTourTimer = 0;
+  let bridgeTourStarted = false;
+  let bridgeUserControlled = false;
+  let threeVault = null;
+
+  function initThreeVault() {
+    const canvas = document.querySelector('#vault-scene');
+    const universe = document.querySelector('#vault-universe');
+    const THREE = window.THREE;
+    if (!canvas || !universe || !THREE || reduced || threeVault) return;
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      canvas.classList.add('is-unavailable');
+      return;
+    }
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+    } catch {
+      canvas.classList.add('is-unavailable');
+      return;
+    }
+    renderer.setPixelRatio(1);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
+    camera.position.z = 6.8;
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const core = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.05, 1),
+      new THREE.MeshPhysicalMaterial({ color: 0x0969ff, emissive: 0x042d73, emissiveIntensity: .85, metalness: .32, roughness: .18, transmission: .08, wireframe: true, transparent: true, opacity: .8 })
+    );
+    group.add(core);
+    [1.62, 2.12].forEach((radius, index) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(radius, .012, 8, 110),
+        new THREE.MeshBasicMaterial({ color: index === 1 ? 0x21d4fd : 0x3485ff, transparent: true, opacity: .38 - index * .06 })
+      );
+      ring.rotation.set(index * .7 + .35, index * .45, index * .85);
+      group.add(ring);
+    });
+
+    const particleCount = 48;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 1.45 + Math.random() * 1.65;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = (Math.random() - .5) * 3.6;
+      positions[i * 3 + 2] = Math.sin(angle) * radius * .45;
+    }
+    const particleGeometry = new THREE.BufferGeometry();
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: 0x35c7ff, size: .026, transparent: true, opacity: .6 }));
+    group.add(particles);
+
+    const pointer = { x: 0, y: 0 };
+    universe.addEventListener('pointermove', (event) => {
+      const rect = universe.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width - .5) * .36;
+      pointer.y = ((event.clientY - rect.top) / rect.height - .5) * .22;
+    });
+    universe.addEventListener('pointerleave', () => { pointer.x = 0; pointer.y = 0; });
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      renderer.setSize(rect.width, rect.height, false);
+      camera.aspect = rect.width / Math.max(rect.height, 1);
+      camera.position.z = rect.width < 600 ? 8.5 : 6.8;
+      camera.updateProjectionMatrix();
+    };
+    new ResizeObserver(resize).observe(universe);
+    resize();
+
+    const state = { visible: true, energy: 0, lastFrame: 0 };
+    const tick = (now) => {
+      requestAnimationFrame(tick);
+      if (!state.visible || document.hidden || window.innerWidth <= 767 || now - state.lastFrame < 33) return;
+      state.lastFrame = now;
+      group.rotation.y += .0028 + state.energy * .014;
+      group.rotation.x += (pointer.y - group.rotation.x) * .025;
+      group.rotation.z += (pointer.x - group.rotation.z) * .025;
+      particles.rotation.y -= .0018;
+      core.scale.setScalar(1 + Math.sin(performance.now() * .0018) * .025 + state.energy * .12);
+      state.energy *= .94;
+      renderer.render(scene, camera);
+    };
+    requestAnimationFrame(tick);
+    threeVault = {
+      pulse: () => { state.energy = 1; },
+      setVisible: (value) => { state.visible = value; },
+    };
+  }
+
+  function bridgeCopy(template, type, iface) {
+    return String(template || '')
+      .replace('{type}', type?.name || '')
+      .replace('{interface}', iface?.name || '');
+  }
+
+  function updateBridgeStatus(mode = 'ready') {
+    const data = t('vaultBridge');
+    const type = data.types.find((item) => item.id === bridgeTypeId) || data.types[0];
+    const iface = data.interfaces.find((item) => item.id === bridgeInterfaceId) || data.interfaces[0];
+    const status = document.querySelector('#bridge-route-status');
+    if (!status) return;
+    const key = mode === 'running' ? 'routeRunning' : mode === 'done' ? 'routeDone' : 'routeReady';
+    status.textContent = bridgeCopy(data[key], type, iface);
+    status.dataset.state = mode;
+  }
+
+  function renderVaultBridge() {
+    const data = t('vaultBridge');
+    const types = document.querySelector('#bridge-type-list');
+    const interfaces = document.querySelector('#bridge-interface-tabs');
+    if (!types || !interfaces) return;
+    if (!data.types.some((item) => item.id === bridgeTypeId)) bridgeTypeId = data.types[0].id;
+    if (!data.interfaces.some((item) => item.id === bridgeInterfaceId)) bridgeInterfaceId = data.interfaces[0].id;
+
+    types.innerHTML = '';
+    data.types.forEach((item) => {
+      const button = el('button', 'bridge-type' + (item.id === bridgeTypeId ? ' active' : ''));
+      button.type = 'button';
+      button.dataset.typeId = item.id;
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', String(item.id === bridgeTypeId));
+      button.innerHTML = `<span>${esc(item.index)}</span><strong>${esc(item.name)}</strong><small>${esc(item.detail)}</small>`;
+      button.addEventListener('click', () => selectBridgeType(item.id));
+      types.append(button);
+    });
+
+    interfaces.innerHTML = '';
+    data.interfaces.forEach((item) => {
+      const button = el('button', 'bridge-interface' + (item.id === bridgeInterfaceId ? ' active' : ''));
+      button.type = 'button';
+      button.dataset.interfaceId = item.id;
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', String(item.id === bridgeInterfaceId));
+      button.textContent = item.name;
+      button.addEventListener('click', () => selectBridgeInterface(item.id));
+      interfaces.append(button);
+    });
+
+    updateBridgePreview(false);
+    updateBridgeOutput();
+    updateBridgeStatus();
+    initThreeVault();
+
+    const run = document.querySelector('#bridge-run');
+    if (run && !run.dataset.bound) {
+      run.dataset.bound = 'true';
+      run.addEventListener('click', () => {
+        bridgeUserControlled = true;
+        window.clearTimeout(bridgeTourTimer);
+        runBridgeRoute();
+      });
+    }
+  }
+
+  function selectBridgeType(id) {
+    if (id === bridgeTypeId) return;
+    bridgeTypeId = id;
+    document.querySelectorAll('.bridge-type').forEach((button) => {
+      const selected = button.dataset.typeId === id;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-selected', String(selected));
+    });
+    updateBridgePreview(true);
+    updateBridgeStatus();
+  }
+
+  function updateBridgePreview(animate) {
+    const data = t('vaultBridge');
+    const item = data.types.find((entry) => entry.id === bridgeTypeId) || data.types[0];
+    const preview = document.querySelector('#bridge-field-preview');
+    const core = document.querySelector('#bridge-vault-core');
+    const state = document.querySelector('#bridge-vault-state');
+    if (!preview || !core || !state) return;
+    preview.innerHTML = `<strong>${esc(item.name)}</strong><span class="bridge-inline-badge">${esc(data.synthetic)}</span>${Array.from({ length: item.sample.length / 2 }, (_, index) => `<span class="bridge-inline-field"><b>${esc(item.sample[index * 2])}</b>${esc(item.sample[index * 2 + 1])}</span>`).join('')}`;
+    state.textContent = `${item.name} / ${data.encrypted}`;
+    if (!animate || reduced) return;
+    threeVault?.pulse();
+    window.gsap?.fromTo(preview, { autoAlpha: .25, y: 12, rotate: -2 }, { autoAlpha: 1, y: 0, rotate: 0, duration: .48, ease: 'power3.out' });
+  }
+
+  function selectBridgeInterface(id) {
+    bridgeInterfaceId = id;
+    document.querySelectorAll('.bridge-interface').forEach((button) => {
+      const selected = button.dataset.interfaceId === id;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-selected', String(selected));
+    });
+    updateBridgeOutput();
+    updateBridgeStatus();
+  }
+
+  function runBridgeRoute() {
+    const host = document.querySelector('#vault-bridge');
+    const core = document.querySelector('#bridge-vault-core');
+    const output = document.querySelector('#bridge-output');
+    const run = document.querySelector('#bridge-run');
+    if (!host || !core || !output || !run) return;
+    const source = document.querySelector('.bridge-type.active');
+    const target = document.querySelector('.bridge-interface.active');
+    const layer = document.querySelector('#bridge-flight-layer');
+    const token = ++bridgeAnimation;
+    host.classList.remove('routing', 'route-complete');
+    void host.offsetWidth;
+    host.classList.add('routing');
+    core.classList.add('receiving');
+    output.classList.add('waiting');
+    run.disabled = true;
+    updateBridgeStatus('running');
+    threeVault?.pulse();
+
+    const finish = () => {
+      if (token !== bridgeAnimation) return;
+      host.classList.remove('routing');
+      host.classList.add('route-complete');
+      core.classList.remove('receiving');
+      output.classList.remove('waiting');
+      output.classList.add('delivered');
+      run.disabled = false;
+      updateBridgeStatus('done');
+      window.setTimeout(() => output.classList.remove('delivered'), 850);
+    };
+
+    if (reduced || !window.gsap || !source || !target || !layer) {
+      window.setTimeout(finish, reduced ? 0 : 1050);
+      return;
+    }
+
+    const universe = document.querySelector('#vault-universe');
+    const u = universe.getBoundingClientRect();
+    const from = source.getBoundingClientRect();
+    const middle = core.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    const packet = el('span', 'bridge-flight-packet', '▓▓▓');
+    layer.append(packet);
+    const point = (rect) => ({ x: rect.left - u.left + rect.width / 2, y: rect.top - u.top + rect.height / 2 });
+    const a = point(from); const b = point(middle); const c = point(to);
+    window.gsap.set(packet, { x: a.x, y: a.y, xPercent: -50, yPercent: -50 });
+    window.gsap.timeline({ onComplete: () => { packet.remove(); finish(); } })
+      .to(packet, { x: b.x, y: b.y, scale: .55, rotate: 210, duration: .7, ease: 'power2.in' })
+      .call(() => { packet.textContent = '◈'; threeVault?.pulse(); })
+      .to(packet, { x: c.x, y: c.y, scale: 1, rotate: 360, duration: .65, ease: 'power3.out' })
+      .to(packet, { autoAlpha: 0, scale: 1.8, duration: .22 });
+  }
+
+  function startBridgeTour() {
+    if (bridgeTourStarted || bridgeUserControlled || reduced) return;
+    bridgeTourStarted = true;
+    const data = t('vaultBridge');
+    bridgeTourTimer = window.setTimeout(() => {
+      if (bridgeUserControlled || !document.querySelector('#vault-bridge')?.classList.contains('in')) return;
+      const type = data.types[1] || data.types[0];
+      const iface = data.interfaces[2] || data.interfaces[0];
+      selectBridgeType(type.id);
+      selectBridgeInterface(iface.id);
+      bridgeTourTimer = window.setTimeout(runBridgeRoute, 420);
+    }, 700);
+  }
+
+  function watchBridge() {
+    const host = document.querySelector('#vault-bridge');
+    if (!host || reduced || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        threeVault?.setVisible(entry.isIntersecting);
+        if (entry.isIntersecting) startBridgeTour();
+      }
+    }, { threshold: 0.38 });
+    io.observe(host);
+  }
+
+  function updateBridgeOutput() {
+    const data = t('vaultBridge');
+    const item = data.interfaces.find((entry) => entry.id === bridgeInterfaceId) || data.interfaces[0];
+    const output = document.querySelector('#bridge-output');
+    if (!output) return;
+    output.classList.remove('switching');
+    void output.offsetWidth;
+    output.innerHTML = `<p>${esc(item.detail)}</p><code><span>$</span> ${esc(item.command)}</code><pre>${esc(item.result)}</pre>`;
+    if (!reduced) output.classList.add('switching');
+  }
+
+  /* ---------------- theater (guardrails terminal) ---------------- */
+
+  let theaterGen = 0;
+  let theaterMode = 'dry';
+  let theaterSkip = false;
+  let theaterStarted = false;
+
+  const gates = () => [...document.querySelectorAll('.gate')];
+
+  function lightGate(index) {
+    gates()[index]?.classList.add('lit');
+    const rail = document.querySelector('#rail-progress');
+    if (rail) rail.style.transform = `scaleX(${(index + 1) / 4})`;
+  }
+
+  function syncTheaterControls() {
+    const applyBtn = document.querySelector('#theater-apply');
+    const mode = document.querySelector('#theater-mode');
+    if (!applyBtn) return;
+    if (theaterMode === 'dry') {
+      applyBtn.textContent = t('theater.applyOn');
+      mode.textContent = t('theater.modeDry');
+      mode.classList.remove('apply');
+    } else {
+      applyBtn.textContent = t('theater.applyOff');
+      mode.textContent = t('theater.modeApply');
+      mode.classList.add('apply');
+    }
+  }
+
+  async function typeInto(line, text, gen, withPrompt) {
+    const target = el('span', 'typed');
+    const cursor = el('span', 'tl-cursor');
+    if (withPrompt) line.append(el('span', 'prompt', '$ '), target, cursor);
+    else line.append(target, cursor);
+    line.classList.add('show');
+    if (reduced || theaterSkip) {
+      target.textContent = text;
+      cursor.remove();
+      return;
+    }
+    for (const char of text) {
+      if (gen !== theaterGen || theaterSkip) {
+        target.textContent = text;
+        break;
+      }
+      target.textContent += char;
+      await sleep(13);
+    }
+    cursor.remove();
+  }
+
+  async function runBar(line, max, gen) {
+    const fill = line.querySelector('.bar i');
+    const count = line.querySelector('em');
+    const dur = reduced ? 0 : 900;
+    const start = performance.now();
+    await new Promise((resolve) => {
+      const tick = (now) => {
+        if (gen !== theaterGen) return resolve();
+        const p = dur === 0 ? 1 : Math.min(1, (now - start) / dur);
+        fill.style.transform = `scaleX(${p})`;
+        count.textContent = `${Math.round(max * p)}/${max}`;
+        if (p < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  async function theaterRun(instant) {
+    const gen = ++theaterGen;
+    theaterSkip = !!instant;
+    const body = document.querySelector('#theater-body');
+    const steps = t('theater')[theaterMode] || [];
+    body.innerHTML = '';
+    gates().forEach((g) => g.classList.remove('lit'));
+    const rail = document.querySelector('#rail-progress');
+    if (rail) rail.style.transform = 'scaleX(0)';
+    syncTheaterControls();
+
+    for (const step of steps) {
+      if (gen !== theaterGen) return;
+      if (step.t === 'cmd') {
+        const line = el('span', 'tl tl-cmd');
+        body.append(line);
+        await typeInto(line, step.text, gen, true);
+      } else if (step.t === 'key') {
+        const line = el('span', 'tl tl-dim', esc(step.text));
+        body.append(line);
+        await sleep(reduced || theaterSkip ? 0 : 220);
+        line.classList.add('show');
+      } else if (step.t === 'bar') {
+        const line = el('span', 'tl tl-bar');
+        line.innerHTML = `<span>${esc(step.label)}</span><span class="bar"><i></i></span><em>0/${step.max}</em>`;
+        body.append(line);
+        line.classList.add('show');
+        await runBar(line, step.max, gen);
+      } else if (step.t === 'kv') {
+        const line = el('span', 'tl tl-kv');
+        line.innerHTML = step.rows.map(([k, v]) => `<b>${esc(k)}</b><i>${esc(v)}</i>`).join('');
+        body.append(line);
+        await sleep(reduced || theaterSkip ? 0 : 60);
+        line.classList.add('show');
+      } else {
+        const line = el('span', `tl tl-${step.cls || ''}`);
+        line.textContent = step.text;
+        body.append(line);
+        await sleep(reduced || theaterSkip ? 0 : 90);
+        line.classList.add('show');
+      }
+      if (step.gate != null) lightGate(step.gate);
+      await sleep(reduced || theaterSkip ? 0 : 380);
+    }
+    if (gen !== theaterGen) return;
+    theaterSkip = false;
+    const cursorLine = el('span', 'tl');
+    cursorLine.append(el('span', 'tl-cursor'));
+    body.append(cursorLine);
+    cursorLine.classList.add('show');
+  }
+
+  function watchTheater() {
+    const host = document.querySelector('#theater');
+    if (!reduced) {
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !theaterStarted) {
+            theaterStarted = true;
+            theaterRun();
+            io.disconnect();
+          }
+        }
+      }, { threshold: 0.3 });
+      io.observe(host);
+    }
+
+    document.querySelector('#theater-replay').addEventListener('click', () => theaterRun());
+    document.querySelector('#theater-apply').addEventListener('click', () => {
+      theaterMode = theaterMode === 'dry' ? 'apply' : 'dry';
+      theaterRun();
+    });
+    document.querySelector('#theater-body').addEventListener('click', () => {
+      theaterSkip = true;
+    });
+    gates().forEach((gate) => {
+      gate.addEventListener('click', () => theaterRun());
+      gate.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          theaterRun();
+        }
+      });
+    });
+  }
+
+  /* ---------------- cli playground ---------------- */
+
+  let activeGroup = 'auth';
+  let playgroundGen = 0;
+  let playgroundStarted = false;
+
+  function renderChips() {
+    const host = document.querySelector('#playground-chips');
+    host.innerHTML = '';
+    t('cli.groups').forEach((group) => {
+      const chip = el('button', 'chip' + (group.name === activeGroup ? ' active' : ''));
+      chip.type = 'button';
+      chip.setAttribute('role', 'tab');
+      chip.setAttribute('aria-selected', String(group.name === activeGroup));
+      chip.tabIndex = group.name === activeGroup ? 0 : -1;
+      chip.textContent = group.name;
+      chip.addEventListener('click', () => {
+        activeGroup = group.name;
+        host.querySelectorAll('.chip').forEach((c) => {
+          c.classList.remove('active');
+          c.setAttribute('aria-selected', 'false');
+          c.tabIndex = -1;
+        });
+        chip.classList.add('active');
+        chip.setAttribute('aria-selected', 'true');
+        chip.tabIndex = 0;
+        playgroundRun(group.name);
+      });
+      host.append(chip);
+    });
+  }
+
+  async function playgroundRun(group) {
+    const gen = ++playgroundGen;
+    const body = document.querySelector('#playground-body');
+    const runs = t('cli.runs') || {};
+    const desc = t('cli.groups').find((g) => g.name === group)?.description || '';
+    body.innerHTML = '';
+
+    const cmd = el('span', 'tl tl-cmd');
+    body.append(cmd);
+    const typed = el('span', 'typed');
+    const cursor = el('span', 'tl-cursor');
+    cmd.append(el('span', 'prompt', '$ '), typed, cursor);
+    cmd.classList.add('show');
+    const command = `bwvault ${group} --help`;
+    typed.textContent = command;
+    cursor.remove();
+
+    const descLine = el('span', 'tl tl-dim', esc(`# ${desc}`));
+    body.append(descLine);
+    if (gen !== playgroundGen) return;
+    descLine.classList.add('show');
+
+    for (const line of runs[group] || []) {
+      if (gen !== playgroundGen) return;
+      const node = el('span', 'tl', esc(line));
+      body.append(node);
+      node.classList.add('show');
+    }
+    if (gen !== playgroundGen) return;
+    const cursorLine = el('span', 'tl');
+    cursorLine.append(el('span', 'tl-cursor'));
+    body.append(cursorLine);
+    cursorLine.classList.add('show');
+  }
+
+  function watchPlayground() {
+    const host = document.querySelector('.playground');
+    document.querySelector('#playground-chips').addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const tabs = [...document.querySelectorAll('#playground-chips [role="tab"]')];
+      const current = tabs.indexOf(document.activeElement);
+      if (current < 0) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+        : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[next].click();
+      tabs[next].focus();
+    });
+    if (reduced) return;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && !playgroundStarted) {
+          playgroundStarted = true;
+          playgroundRun(activeGroup);
+          io.disconnect();
+        }
+      }
+    }, { threshold: 0.3 });
+    io.observe(host);
+  }
+
+  /* ---------------- product mini panels ---------------- */
+
+  let healthBarsSet = false;
+
+  function renderPanels() {
+    const p = t('product');
+
+    const health = document.querySelector('#panel-health');
+    health.innerHTML = `<span class="panel-cmd">${esc(p.healthCmd)}</span>` + p.healthBars.map((bar, i) => {
+      const tone = i === 0 ? ' danger' : i === 1 ? ' warn' : '';
+      return `<div class="hbar${tone}" data-value="${bar.value}">
+        <div class="hbar-head"><span>${esc(bar.label)}</span><b>${bar.value}</b></div>
+        <div class="track"><div class="fill"></div></div>
+      </div>`;
+    }).join('');
+
+    const d = p.dedupe;
+    document.querySelector('#panel-dedupe').innerHTML = `
+      <span class="panel-cmd">${esc(p.dedupeCmd)}</span>
+      <div class="dedupe-stage">
+        <div class="dupe-card a"><span>${esc(d.cardA)}</span><span class="pill">${esc(d.keep)}</span></div>
+        <div class="dupe-card b"><span>${esc(d.cardB)}</span><span class="pill">${esc(d.merge)}</span></div>
+        <div class="dupe-result">${esc(d.result)}</div>
+      </div>`;
+
+    document.querySelector('#panel-alias').innerHTML = `
+      <div class="alias-term">
+        <span class="cmd-line"><span class="prompt">$ </span><span class="typed"></span><span class="tl-cursor"></span></span>
+      </div>`;
+    startAliasLoop();
+  }
+
+  let aliasGen = 0;
+  let aliasVisible = false;
+
+  async function startAliasLoop() {
+    const gen = ++aliasGen;
+    const p = t('product.alias');
+    const term = document.querySelector('#panel-alias .alias-term');
+    if (!term) return;
+
+    while (gen === aliasGen && term.isConnected && (aliasVisible || reduced)) {
+      term.querySelectorAll('.row, .note').forEach((n) => n.remove());
+      const typed = term.querySelector('.typed');
+      const cursor = term.querySelector('.tl-cursor');
+      typed.textContent = '';
+      if (reduced) {
+        typed.textContent = p.cmd;
+        cursor.remove();
+        appendAliasRows(term, p);
+        return;
+      }
+      for (const char of p.cmd) {
+        if (gen !== aliasGen) return;
+        typed.textContent += char;
+        await sleep(26);
+      }
+      cursor.remove();
+      appendAliasRows(term, p);
+      await sleep(4200);
+      const fresh = el('span', 'tl-cursor');
+      term.querySelector('.cmd-line').append(fresh);
+    }
+  }
+
+  function appendAliasRows(term, p) {
+    p.rows.forEach((row, i) => {
+      const node = el('span', 'row');
+      node.style.opacity = '0';
+      node.style.transition = 'opacity .4s ease';
+      node.innerHTML = `<b>${esc(row[0])}</b>  ${esc(row[1])}  ${esc(row[2])}  <span class="mask">${esc(p.masked)}</span>`;
+      term.append(node);
+      setTimeout(() => { node.style.opacity = '1'; }, reduced ? 0 : 300 + i * 260);
+    });
+    const note = el('span', 'note', esc(p.note));
+    note.style.opacity = '0';
+    note.style.transition = 'opacity .4s ease';
+    term.append(note);
+    setTimeout(() => { note.style.opacity = '1'; }, reduced ? 0 : 300 + p.rows.length * 260);
+  }
+
+  function watchPanels() {
+    const health = document.querySelector('#panel-health');
+    const ioHealth = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && !healthBarsSet) {
+          healthBarsSet = true;
+          const max = Math.max(...health.querySelectorAll('.hbar').length
+            ? [...health.querySelectorAll('.hbar')].map((b) => Number(b.dataset.value)) : [1]);
+          health.querySelectorAll('.hbar').forEach((bar) => {
+            bar.querySelector('.fill').style.width = `${(Number(bar.dataset.value) / max) * 100}%`;
+          });
+          ioHealth.disconnect();
+        }
+      }
+    }, { threshold: 0.4 });
+    ioHealth.observe(health);
+
+    const alias = document.querySelector('#panel-alias');
+    const ioAlias = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const was = aliasVisible;
+        aliasVisible = entry.isIntersecting;
+        if (aliasVisible && !was) startAliasLoop();
+      }
+    }, { threshold: 0.35 });
+    ioAlias.observe(alias);
+  }
+
+  /* ---------------- boundary flow ---------------- */
+
+  function renderFlow() {
+    const b = t('boundary');
+    const host = document.querySelector('#boundary-flow');
+    host.innerHTML = '';
+    b.nodes.forEach((node, i) => {
+      const n = el('div', 'flow-node' + (i === 1 ? ' proxy' : ''));
+      const badge = i === 0 ? `<span class="flow-badge">${esc(b.browserBadge)}</span>`
+        : i === 1 ? `<span class="flow-badge">${esc(b.proxyBadge)}</span>` : '';
+      const decode = i === 0 ? '<span class="flow-decode">▓▓▓▓▓▓▓▓</span>' : '';
+      n.innerHTML = `<strong>${esc(node.name)}</strong><span>${esc(node.detail)}</span>${badge}${decode}`;
+      host.append(n);
+      if (i < b.nodes.length - 1) {
+        const link = el('div', 'flow-link');
+        link.setAttribute('aria-hidden', 'true');
+        link.innerHTML = `
+          <span class="lane top"></span><span class="lane bottom"></span>
+          <span class="packet top">▓▓▓</span>
+          <span class="packet top d2">▓▓▓</span>
+          <span class="packet bottom">▓▓▓</span>
+          <span class="packet bottom d2">▓▓▓</span>`;
+        host.append(link);
+      }
+    });
+    if (reduced) document.querySelector('.flow-decode').textContent = 'boss@itycon.cn ✓';
+    else if (flowVisible) {
+      host.classList.add('is-running');
+      startDecodeLoop();
+    }
+  }
+
+  let decodeGen = 0;
+  let flowVisible = false;
+
+  async function startDecodeLoop() {
+    const gen = ++decodeGen;
+    const node = document.querySelector('.flow-decode');
+    if (!node) return;
+    const values = ['boss@itycon.cn ✓', 'api.cloudflare.com ✓', 'ssh://nas ✓'];
+    if (reduced) {
+      node.textContent = values[0];
+      return;
+    }
+    const chars = '▓░#%&@$';
+    let valueIndex = 0;
+    while (gen === decodeGen && node.isConnected && flowVisible) {
+      const target = values[valueIndex % values.length];
+      node.textContent = '▓▓▓▓▓▓▓▓';
+      await sleep(520);
+      if (gen !== decodeGen || !flowVisible) return;
+      let frame = 0;
+      while (frame <= target.length * 1.5 + 2 && gen === decodeGen && flowVisible) {
+        node.textContent = target.split('').map((c, i) => (frame > i * 1.5 ? c : chars[Math.random() * chars.length | 0])).join('');
+        frame += 1;
+        await sleep(42);
+      }
+      node.textContent = target;
+      valueIndex += 1;
+      await sleep(1450);
+    }
+  }
+
+  function watchFlow() {
+    if (reduced) return;
+    const host = document.querySelector('#boundary-flow');
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const wasVisible = flowVisible;
+        flowVisible = entry.isIntersecting;
+        host.classList.toggle('is-running', flowVisible);
+        if (flowVisible && !wasVisible) startDecodeLoop();
+        if (!flowVisible && wasVisible) decodeGen += 1;
+      }
+    }, { threshold: 0.25 });
+    io.observe(host);
+  }
+
+  /* ---------------- boot ---------------- */
+
+  renderLanguage();
+  if (!reduced) watchVault();
+  watchTheater();
+  watchPlayground();
+  watchPanels();
+  watchFlow();
+  watchBridge();
+
+  if (reduced) {
+    vaultFinalState();
+    document.querySelectorAll('.gate').forEach((gate) => gate.classList.add('lit'));
+  }
+})();
+</script>
+</body>
+</html>
