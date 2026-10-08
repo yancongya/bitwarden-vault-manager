@@ -35,7 +35,15 @@
 - 线上容器：`healthy`、用户为 `node`、只读 rootfs、`cap_drop=ALL`、`no-new-privileges=true`
 - 线上接口：HTTPS 3443 正常；远程 HTTP 3000 不可达；未授权 session 写入返回 403；未解锁 session 读取返回 401
 - NAS 线上 `/api/pin`、HTTPS/HTTP 端口和容器非秘密配置完成只读确认
-- `npm audit` 因当前 npm 镜像不支持 advisory endpoint，未取得有效结果
+- 本机默认 npm 镜像不支持 advisory endpoint；改用官方 npm registry 审计。2026-10-08 修复构建依赖后，全量及 `--omit=dev` 审计均为 0 项告警
+
+## 2026-10-08 发布复核
+
+- 源码已推送到 `main`，构建依赖修复提交为 `000ccc8`；CLI 测试 23/23、Web 构建、`git diff --check` 通过。
+- NAS 上新容器的镜像 ID 与本机构建一致：`sha256:bebeba518bcde7505aa681f4a21d2626dfaeda3cc182dbe2c35947c709d29158`。容器 `healthy`，运行用户 `node`，只读 rootfs、`cap_drop=ALL`、`no-new-privileges=true`，数据挂载仍为 `/vol1/1000/services/data/bwvault:/data`。
+- 实际 HTTPS 入口返回 200；未解锁 session 读取返回 401，未授权 session 写入返回 403，远程 HTTP 3000 不可达。本机 `bwvault auth status --json` 通过新容器返回有效会话，仅核对安全元数据，未输出密值。
+- NAS 页面在真实浏览器中显示 PIN 验证界面；首次加载时登录页与面板均隐藏。公开落地页在浏览器中先显示引导层，结束后才显示主内容。
+- 本轮未执行线上解锁、密码读取、凭据写入、删除或压力测试；这些业务路径不属于此次只读发布验收。
 
 ## 修复顺序
 
