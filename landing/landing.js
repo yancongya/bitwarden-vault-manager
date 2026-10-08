@@ -36,9 +36,13 @@
 
   if (reduced) {
     pageIntro?.classList.remove('is-active');
+    root.classList.remove('landing-boot');
   } else {
     pageIntro?.classList.add('is-active');
-    window.setTimeout(() => pageIntro?.classList.remove('is-active'), 2300);
+    window.setTimeout(() => {
+      pageIntro?.classList.remove('is-active');
+      root.classList.remove('landing-boot');
+    }, 2300);
   }
 
   document.addEventListener('click', (event) => {

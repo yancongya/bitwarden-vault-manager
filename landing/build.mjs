@@ -34,7 +34,7 @@ const productItems = zh.product.items.map((item, index) => `
   </article>`).join('');
 
 const html = `<!doctype html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="dark" class="landing-boot">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -63,6 +63,7 @@ const html = `<!doctype html>
     license: 'https://opensource.org/licenses/MIT',
   }]).replaceAll('<', '\\u003c')}</script>
   <style>${stylesheet}</style>
+  <style>html.landing-boot main,html.landing-boot footer,html.landing-boot .site-header{visibility:hidden}</style>
 </head>
 <body>
   <div class="page-intro" id="page-intro" aria-hidden="true">
