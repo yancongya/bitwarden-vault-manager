@@ -232,17 +232,20 @@ printf '%s' "$SECRET" | ./bitwardenagents credential set \
 
 ### 一键部署到 NAS
 
-仓库自带 `build-and-deploy.sh`：在本地构建 `linux/amd64` 镜像 → `docker save` → SSH 传到 NAS → `docker load` → 替换容器并保留 `/vol1/1000/services/data/bwvault` 数据卷。
+仓库自带 `build-and-deploy.sh`：默认只生成部署计划；只有 `apply --yes` 才会在本地构建 `linux/amd64` 镜像、经 SkillDo 管理的 `infra-ops` SSH wrapper 传至 NAS，并替换容器。部署要求工作树干净，保留 `/vol1/1000/services/data/bwvault` 数据目录；失败时会尝试恢复先前容器。
 
 ```bash
-./build-and-deploy.sh
-# 输出：
-#   HTTPS: https://192.168.31.110:3443/
-#   会话、PIN、设备 ID 与自动登录凭据均保存在 /vol1/1000/services/data/bwvault
+./build-and-deploy.sh plan
+# 仅在提交了准备发布的源码、用户明确授权部署后运行：
+./build-and-deploy.sh apply --yes
+
+# myworkforce 工作流：先看只读计划，再创建 11 阶段 run
+myworkforce plan "$PWD"
+myworkforce start "$PWD"
 ```
 
 > [!WARNING]
-> 修改脚本顶部的 `NAS=` / `DATA_DIR=` 变量以匹配你的环境。脚本会保留旧容器为 `bwvault-before-<时间戳>` 30 秒后由你自行清理。
+> `workforce.ops.json` 将本项目映射到 Agent Ops 服务 `bwvault` 与更新适配器 `scripts/deploy_nas.py`。可先运行 `myworkforce plan "$PWD"` 检查 Skills 与阶段计划；myworkforce 的 NAS 阶段还会对照 Agent Ops 目录验证 owner、适配器和能力。该契约不会授权部署，也不能绕过工作树干净检查或 `apply --yes`。
 
 <a id="cli-模式"></a>
 

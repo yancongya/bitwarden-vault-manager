@@ -1,0 +1,13 @@
+{
+  "schema": "workforce-ops/v2",
+  "projectId": "bitwarden-vault-manager",
+  "serviceId": "bwvault",
+  "sourceRevisionCommand": ["git", "rev-parse", "HEAD"],
+  "worktreePolicy": "clean-required",
+  "adapter": "scripts/deploy_nas.py",
+  "dataPolicy": {
+    "preservePersistentData": true,
+    "neverDeleteVolumes": true,
+    "rollbackRequiresKnownGoodRelease": true
+  }
+}
