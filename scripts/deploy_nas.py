@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -16,7 +17,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = "/vol1/1000/services/data/bwvault"
 CONTAINER = "bwvault"
-WRAPPER = Path(os.environ.get("AGENT_OPS_SSH_WRAPPER", Path.home() / ".skillshub/infra-ops/scripts/ssh-nas.sh")).expanduser()
+RUNTIME_CONFIG_PATH = Path.home() / ".config/agent-ops/runtime.json"
+
+
+def _nas_ssh_target() -> str:
+    target = os.environ.get("AGENT_OPS_SSH_TARGET")
+    if target is None:
+        try:
+            config = json.loads(RUNTIME_CONFIG_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            config = {}
+        target = config.get("nasSshTarget") if isinstance(config, dict) else None
+    if not isinstance(target, str) or not re.fullmatch(
+        r"[A-Za-z_][A-Za-z0-9_.-]{0,63}@[A-Za-z0-9][A-Za-z0-9.-]{0,252}", target
+    ):
+        raise RuntimeError(f"缺少或无效的 NAS SSH 目标；请在 {RUNTIME_CONFIG_PATH} 配置 nasSshTarget")
+    return target
+
+
+def _ssh_argv(target: str, command: str) -> list[str]:
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,63}@[A-Za-z0-9][A-Za-z0-9.-]{0,252}", target):
+        raise RuntimeError(f"缺少或无效的 NAS SSH 目标；请在 {RUNTIME_CONFIG_PATH} 配置 nasSshTarget")
+    return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+            "-o", "StrictHostKeyChecking=accept-new", target, command]
 
 
 def _run(argv: list[str], *, cwd: Path = ROOT, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
@@ -123,8 +146,7 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
         raise RuntimeError("部署被工作区保护规则阻止")
     if not yes:
         raise RuntimeError("执行需要显式传 --yes")
-    if not WRAPPER.is_file():
-        raise RuntimeError("SkillDo 管理的 infra-ops SSH wrapper 不存在")
+    target = _nas_ssh_target()
     image = str(plan["image"])
     build = _run(["docker", "buildx", "build", "--platform", "linux/amd64", "--load", "-t", image, "."])
     if build.returncode:
@@ -132,7 +154,7 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
 
     with subprocess.Popen(["docker", "save", image], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as source:
         assert source.stdout is not None
-        load = subprocess.run([str(WRAPPER), "sudo -n docker load"], stdin=source.stdout, text=False, capture_output=True, check=False)
+        load = subprocess.run(_ssh_argv(target, "sudo -n docker load"), stdin=source.stdout, text=False, capture_output=True, check=False)
         source.stdout.close()
         save_stderr = source.stderr.read().decode(errors="replace") if source.stderr else ""
         save_status = source.wait()
@@ -141,7 +163,7 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     command = "bash -s -- " + " ".join(shlex.quote(value) for value in (CONTAINER, image, DATA_DIR, stamp))
-    deployed = subprocess.run([str(WRAPPER), command], input=REMOTE_DEPLOY, text=True, capture_output=True, check=False)
+    deployed = subprocess.run(_ssh_argv(target, command), input=REMOTE_DEPLOY, text=True, capture_output=True, check=False)
     if deployed.returncode:
         raise RuntimeError(deployed.stderr.strip() or deployed.stdout.strip() or f"NAS deploy failed ({deployed.returncode})")
     return {"ok": True, "sourceRevision": plan["sourceRevision"], "image": image, "output": deployed.stdout.strip()}

@@ -61,7 +61,7 @@
 ## 2026-10-09 部署入口加固与 NAS 验收
 
 - `build-and-deploy.sh` 默认显示计划；仅 `apply --yes` 才构建并连接 NAS。
-- 部署要求 Git 工作区干净，镜像标签由源码 HEAD 生成；通过 SkillDo 管理的 `infra-ops` SSH wrapper 传输，不直接拼接凭据。
+- 部署要求 Git 工作区干净，镜像标签由源码 HEAD 生成；当前通过 `~/.config/agent-ops/runtime.json` 中的非秘密 `nasSshTarget` 使用非交互密钥 SSH 传输，不依赖 SkillDo `infra-ops` wrapper，也不拼接凭据。
 - NAS 侧先验证现有 `/data` bind mount 与固定数据目录一致。新容器必须通过 Docker healthcheck；失败时保留失败容器并尝试恢复先前容器，不删除容器或数据卷。
 - Agent Ops 已登记该更新适配器。提交 `35790bb20a773c0b4a289ce35ae041794293d1aa` 已推送并部署；NAS 容器镜像为 `bwvault:release-35790bb20a773c0b`，运行和 Docker healthcheck 均为 healthy，`/data` 仍绑定到 `/vol1/1000/services/data/bwvault`，HTTPS 首页返回 200。
-- 部署期间发现并修复了 infra-ops SSH wrapper 的输入转发缺陷：密钥探测现在从 `/dev/null` 读取，确保后续镜像流和远端脚本仍能收到输入。通过本机隔离 fake-SSH 回归验证标准输入完整转发。
+- 历史部署曾使用 `infra-ops` SSH wrapper，并修复过其输入转发缺陷；当前部署入口已改为直连系统 SSH，仍以独立回归验证镜像流和远端脚本的标准输入。
