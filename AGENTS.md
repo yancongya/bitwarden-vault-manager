@@ -142,6 +142,9 @@ registry by alias only. The value belongs in Bitwardenagents, not documentation.
 - Preserve unrelated dirty work and inspect recent commits before editing.
 - Run syntax checks, `node agent-harness/tests/run.js`, `npm run build`, and
   `git diff --check` in proportion to the change.
-- Use `./build-and-deploy.sh` for NAS replacement; verify health and actual
-  mounts afterward. Permission to edit or deploy does not imply permission to
-  commit or push.
+- Preview NAS replacement with `./build-and-deploy.sh plan`; deploy only after
+  explicit authorization using `./build-and-deploy.sh apply --yes`. The script
+  requires a clean Git worktree, preserves the existing `/data` bind mount,
+  checks health, and attempts to restore the prior container if acceptance
+  fails. Verify the live image, health, and actual mounts after deployment.
+  Permission to edit or deploy does not imply permission to commit or push.
