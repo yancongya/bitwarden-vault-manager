@@ -1,5 +1,20 @@
 # bwvault — Headless CLI for Bitwarden Vault Manager
 
+## Build an installable npm package
+
+From this directory, inspect or create a local tarball without publishing:
+
+```bash
+npm pack --dry-run
+npm pack --pack-destination /tmp
+```
+
+The package stages `src/crypto.js` and `src/bitwarden-api.js` from the parent
+repository for packaging. Those shared modules remain maintained only in the
+repository root; staging files are removed after packaging, including when npm
+pack fails. Run `npm run test:package` to verify the tarball in an isolated
+installation directory.
+
 Inspect, analyse and clean a Bitwarden vault without exposing plaintext.
 Built on top of the audited browser crypto engine in `src/`; all decryption
 happens locally, the master password never leaves your machine.

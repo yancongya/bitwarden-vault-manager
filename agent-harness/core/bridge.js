@@ -17,14 +17,20 @@
  */
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { getDeviceIdentifier } from './session.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// src/ sits at <repo>/src, agent-harness at <repo>/agent-harness
-const SRC_DIR = path.resolve(__dirname, '..', '..', 'src');
+// npm packages stage the canonical shared modules under runtime-src/. In a
+// source checkout and Docker build, use the repository's single src/ copy.
+const PACKAGED_SRC_DIR = path.resolve(__dirname, '..', 'runtime-src');
+const REPO_SRC_DIR = path.resolve(__dirname, '..', '..', 'src');
+const SRC_DIR = fs.existsSync(path.join(PACKAGED_SRC_DIR, 'crypto.js'))
+  ? PACKAGED_SRC_DIR
+  : REPO_SRC_DIR;
 const srcPath = (f) => path.join(SRC_DIR, f);
 
 // Re-exported, unmodified, from the browser engine.

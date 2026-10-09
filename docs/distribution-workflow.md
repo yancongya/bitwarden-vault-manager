@@ -11,7 +11,7 @@
 1. 检查仓库状态和目标 NAS 容器身份，保留未提交页面工作；确认本次要包含的源码版本。
 2. 在本地运行 `node agent-harness/tests/run.js`、`npm run build`、`git diff --check`。涉及会话或部署时按 `docs/security-report.md` 复核安全边界。
 3. 使用 `myworkforce plan "$PWD"` 查看计划，并由 `workforce.ops.json` 将项目映射到 Agent Ops 的 `bwvault` 服务与 `scripts/deploy_nas.py` 更新适配器。myworkforce NAS 阶段会对照本地 Agent Ops 服务目录核验 owner、适配器和 update 能力；这不会执行部署，也不会改变显式授权要求。
-4. 在用户明确授权且准备发布的源码已经提交、工作树干净后，运行 `./build-and-deploy.sh plan` 复核发布身份；确认后才运行 `./build-and-deploy.sh apply --yes`。脚本保留既有 `/vol1/1000/services/data/bwvault:/data` 挂载，通过 SkillDo 管理的 infra-ops SSH wrapper 传输，并在 healthcheck 失败时尝试恢复旧容器。
+4. 本地可运行 `./build-and-deploy.sh plan` 查看适配器 dry-run 与发布身份。实际部署必须经 `agent-ops update bwvault` 路由到 Agent Ops 服务目录登记的 `scripts/deploy_nas.py`；只有用户明确授权、准备发布的源码已提交且工作树干净时，才对 Agent Ops 计划使用 `--yes`。适配器保留既有 `/vol1/1000/services/data/bwvault:/data` 挂载，验收容器健康和镜像标签，并在候选容器验收失败时尝试恢复旧容器。Agent Ops 目录当前未登记 bwvault 的独立手动 rollback 能力；自动恢复不等同于该能力。
 5. 部署后验证运行镜像与本地构建身份、容器健康、数据挂载、HTTPS、受保护会话接口，以及至少一条真实 CLI 只读任务。构建日志或脚本退出码不能替代线上验证。
 6. 仓库中的 `agent-harness/skills/SKILL.md` 作为 `bwvault-cli` 的唯一编辑源。合并旧中央副本的有效内容后，由 SkillDo 登记来源并同步到已安装的 Agent 工具；实际检查每条目标是指向中央目录的软链。
 
