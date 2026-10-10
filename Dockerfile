@@ -54,7 +54,7 @@ ENV BWVAULT_HOME=/data/session \
     PORT=3000 \
     NO_COLOR=
 
-RUN mkdir -p /data/session && chown -R node:node /data /app
+RUN mkdir -p /data/session && chown -R node:node /data
 
 COPY start.sh ./start.sh
 RUN chmod 0755 /app/start.sh
