@@ -27,11 +27,11 @@ function requireSession() {
 }
 
 /** Build {ciphers, client, symmetricKey} for a mutation run. */
-async function prepare(opts) {
+async function prepare(opts, { forceRemote = false } = {}) {
   const s = requireSession();
   const { ciphers } = await syncVault(s, (d, t) => {
     if (!opts.json) out.progress(d, t, 'decrypting');
-  });
+  }, { forceRemote });
   const client = createClient(s.serverUrl);
   client.accessToken = s.accessToken;
   return { ciphers, client, symmetricKey: s.symmetricKey, session: s };
@@ -48,7 +48,7 @@ async function encFolderName(name, key) {
  * stored in the plan or transmitted anywhere.
  */
 export async function dedup(opts) {
-  const { ciphers, client } = await prepare(opts);
+  const { ciphers, client } = await prepare(opts, { forceRemote: !!opts.apply });
   const logins = ciphers.filter((c) => !c.deletedDate && c.typeName === 'login');
 
   const groups = new Map();
@@ -134,7 +134,7 @@ export async function dedup(opts) {
  * `purge` is irreversible: requires --apply AND --yes.
  */
 export async function trash(opts) {
-  const { ciphers, client } = await prepare(opts);
+  const { ciphers, client } = await prepare(opts, { forceRemote: !!opts.apply });
   const trashed = ciphers.filter((c) => c.deletedDate);
   const action = opts.action || 'list';
 
@@ -194,7 +194,7 @@ export async function folders(opts) {
   if (!action) {
     const { folders } = await syncVault(s, (d, t) => {
       if (!opts.json) out.progress(d, t, 'decrypting');
-    });
+    }, { forceRemote: !!opts.apply });
     return {
       ok: true,
       count: folders.length,
@@ -204,7 +204,7 @@ export async function folders(opts) {
     };
   }
 
-  const { client, symmetricKey } = await prepare(opts);
+  const { client, symmetricKey } = await prepare(opts, { forceRemote: !!opts.apply });
 
   if (action === 'create') {
     if (!opts.name) throw new Error('--name is required to create a folder');

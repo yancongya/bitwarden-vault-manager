@@ -94,13 +94,14 @@ async function renewApiKeySession(current, client) {
  * @param {(done:number,total:number)=>void} [onProgress]
  * @returns {Promise<{ciphers: Array, folders: Array, raw: object}>}
  */
-export async function syncVault(session, onProgress) {
+export async function syncVault(session, onProgress, { forceRemote = false } = {}) {
   const { client, symmetricKey } = clientFromSession(session);
 
-  // Check encrypted local cache first — if valid (< 10 min old), skip API call.
+  // Reads may reuse the encrypted cache. Mutations force a server check so an
+  // expired API-key session can renew before the write request is sent.
   const cached = loadCache();
   const CACHE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
-  let raw = cached?.raw && cached.savedAt && (Date.now() - cached.savedAt) < CACHE_MAX_AGE
+  let raw = !forceRemote && cached?.raw && cached.savedAt && (Date.now() - cached.savedAt) < CACHE_MAX_AGE
     ? cached.raw
     : null;
 
@@ -114,7 +115,7 @@ export async function syncVault(session, onProgress) {
         raw = await client.sync();
       }
       // An expired encrypted cache is still safer than failing offline.
-      if (!raw && cached?.raw) raw = cached.raw;
+      if (!raw && cached?.raw && !forceRemote) raw = cached.raw;
       else if (!raw) throw e;
     }
   }

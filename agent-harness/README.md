@@ -114,6 +114,7 @@ node bin/bwvault.js credential list --json
   `trash purge --id <id> --apply --yes` is irreversible.
 - **Credential aliases**: `credential set` reads the secret from stdin, a
   hidden prompt, or `BWVAULT_SECRET`; responses never contain the secret.
+- **Mutation session freshness**: write operations force a remote vault sync before applying changes. An expired API-key session renews from the protected persistent credential file; if remote sync or renewal fails, the write is refused rather than using cached vault data.
 
 ## Docker
 

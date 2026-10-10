@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "start": "node bin/bwvault.js",
-    "test": "node tests/run.js",
+    "test": "node tests/run.js && node tests/cache-sync.mjs",
     "test:package": "node tests/package-smoke.mjs",
     "prepack": "node scripts/stage-runtime.mjs",
     "postpack": "node scripts/clean-runtime.mjs"

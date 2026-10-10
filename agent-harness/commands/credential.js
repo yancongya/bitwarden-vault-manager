@@ -73,11 +73,11 @@ function requireSession() {
   return value;
 }
 
-async function prepare(opts) {
+async function prepare(opts, { forceRemote = false } = {}) {
   const current = requireSession();
   const { ciphers } = await syncVault(current, (done, total) => {
     if (!opts.json) out.progress(done, total, 'decrypting');
-  });
+  }, { forceRemote });
   const client = createClient(current.serverUrl);
   client.accessToken = current.accessToken;
   return { current, ciphers, client };
@@ -163,7 +163,7 @@ export async function set(opts) {
   if (!secret) throw new Error('Credential secret required via stdin, hidden prompt, or BWVAULT_SECRET.');
 
   try {
-    const { current, ciphers, client } = await prepare(opts);
+    const { current, ciphers, client } = await prepare(opts, { forceRemote: true });
     const name = credentialItemName(alias);
     const matches = findByAlias(ciphers, alias);
     if (matches.length > 1) throw new Error(`Multiple vault items use alias "${alias}"; resolve duplicates before saving.`);
