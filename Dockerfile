@@ -15,7 +15,7 @@
 FROM node:22-slim AS deps
 WORKDIR /build
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 # ---------- Stage 2: build web app ----------
 FROM node:22-slim AS builder
@@ -26,8 +26,7 @@ COPY src ./src
 COPY public ./public
 COPY functions ./functions
 COPY --from=deps /build/node_modules ./node_modules
-# The frontend bundler is the only development dependency needed in this stage.
-RUN npm install --no-save --no-package-lock --no-audit --no-fund vite@8.3.4 && ./node_modules/.bin/vite build
+RUN ./node_modules/.bin/vite build
 
 # ---------- Stage 3: runtime ----------
 FROM node:22-slim AS runtime
@@ -39,7 +38,7 @@ RUN apt-get update \
 WORKDIR /app
 
 # Runtime deps only
-COPY --from=deps /build/node_modules ./node_modules
+RUN npm ci --omit=dev --no-audit --no-fund
 # Built web assets
 COPY --from=builder /app/dist ./dist
 # Server + CLI
