@@ -163,16 +163,23 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
     ) as source:
         assert source.stdout is not None
         build_command = "sudo -n docker build --platform linux/amd64 --tag " + shlex.quote(image) + " -"
+        # Keep only a short diagnostic tail so NAS build failures can be fixed
+        # without exposing the full build context or flooding Agent Ops output.
         build = subprocess.run(_ssh_argv(target, build_command), stdin=source.stdout,
-                               text=False, capture_output=True, check=False)
+                               text=False, capture_output=True, check=False, timeout=900)
         source.stdout.close()
         if source.stderr:
             source.stderr.read()
         archive_status = source.wait()
     if archive_status or build.returncode:
-        # Build output can contain source paths or package diagnostics; keep it out of
-        # Agent Ops receipts and logs. The exit code is enough to direct investigation.
-        raise RuntimeError(f"NAS Docker build failed (git archive={archive_status}, remote build={build.returncode})")
+        diagnostic = (build.stderr or build.stdout or b"").decode("utf-8", errors="replace")
+        safe_tail = "\\n".join(line[:240] for line in diagnostic.splitlines()[-12:])
+        # Build output may include source paths. Return only the final, bounded
+        # diagnostic lines; never echo the streamed source archive or SSH target.
+        detail = f"\\nRemote Docker build diagnostics:\\n{safe_tail}" if safe_tail else ""
+        raise RuntimeError(
+            f"NAS Docker build failed (git archive={archive_status}, remote build={build.returncode}){detail}"
+        )
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     command = "bash -s -- " + " ".join(shlex.quote(value) for value in (CONTAINER, image, DATA_DIR, stamp))
