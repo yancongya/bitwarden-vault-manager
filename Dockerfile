@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 #
 # bwvault — Web UI + CLI for Bitwarden Vault Manager.
 #
