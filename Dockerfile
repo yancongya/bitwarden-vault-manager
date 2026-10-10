@@ -25,7 +25,9 @@ COPY vite.config.js index.html ./
 COPY src ./src
 COPY public ./public
 COPY functions ./functions
-RUN npm install && npx vite build
+COPY --from=deps /build/node_modules ./node_modules
+# The frontend bundler is the only development dependency needed in this stage.
+RUN npm install --no-save --no-package-lock --no-audit --no-fund vite@8.3.4 && ./node_modules/.bin/vite build
 
 # ---------- Stage 3: runtime ----------
 FROM node:22-slim AS runtime
