@@ -77,7 +77,7 @@ class DeploymentPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "nasSshTarget"):
             deploy_nas._ssh_argv("-oProxyCommand=id", "true")
 
-    def test_apply_streams_git_source_to_nas_build_and_deploy_without_local_docker(self):
+    def test_apply_transfers_git_archive_to_nas_context_and_deploys_without_local_docker(self):
         class FakeSource:
             stdout = io.BytesIO(b"source-archive")
             stderr = io.BytesIO()
@@ -108,6 +108,8 @@ class DeploymentPlanTests(unittest.TestCase):
         self.assertTrue(all(call["argv"][0] == "ssh" and "BatchMode=yes" in call["argv"] for call in calls))
         self.assertEqual(calls[0]["stdinData"], b"source-archive")
         self.assertIn("docker build --platform linux/amd64", calls[0]["argv"][-1])
+        self.assertIn("tar -xf -", calls[0]["argv"][-1])
+        self.assertIn("mktemp -d /tmp/bwvault-build.", calls[0]["argv"][-1])
         self.assertFalse(any("docker" in arg and arg != calls[0]["argv"][-1]
                              for call in calls for arg in call["argv"]))
         self.assertEqual(calls[1]["kwargs"]["input"], deploy_nas.REMOTE_DEPLOY)

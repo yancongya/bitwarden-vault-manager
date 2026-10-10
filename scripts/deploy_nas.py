@@ -157,16 +157,25 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
     if image != current.get("image") or not re.fullmatch(r"bwvault:release-[0-9a-f]{16}", image):
         raise RuntimeError("部署镜像与当前源码计划不匹配")
 
+    # Transfer the revision archive to a private temporary NAS directory first.
+    # Building from that directory gives BuildKit a normal context and preserves
+    # useful progress diagnostics; cleanup runs even when the build fails.
+    remote_build = r'''set -eu
+    image="$1"; revision="$2"
+    context="$(mktemp -d /tmp/bwvault-build.XXXXXX)"
+    cleanup() { rm -rf "$context"; }
+    trap cleanup EXIT HUP INT TERM
+    tar -xf - -C "$context"
+    sudo -n docker build --platform linux/amd64 --tag "$image" "$context"
+    '''
     with subprocess.Popen(
         ["git", "-C", str(ROOT), "archive", "--format=tar", str(current["sourceRevision"])],
         cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     ) as source:
         assert source.stdout is not None
-        build_command = "sudo -n docker build --platform linux/amd64 --tag " + shlex.quote(image) + " -"
-        # Keep only a short diagnostic tail so NAS build failures can be fixed
-        # without exposing the full build context or flooding Agent Ops output.
+        build_command = "bash -c " + shlex.quote(remote_build) + " -- " + shlex.quote(image) + " " + shlex.quote(str(current["sourceRevision"]))
         build = subprocess.run(_ssh_argv(target, build_command), stdin=source.stdout,
-                               text=False, capture_output=True, check=False, timeout=900)
+                               text=False, capture_output=True, check=False, timeout=1200)
         source.stdout.close()
         if source.stderr:
             source.stderr.read()
@@ -174,8 +183,6 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
     if archive_status or build.returncode:
         diagnostic = (build.stderr or build.stdout or b"").decode("utf-8", errors="replace")
         safe_tail = "\\n".join(line[:240] for line in diagnostic.splitlines()[-12:])
-        # Build output may include source paths. Return only the final, bounded
-        # diagnostic lines; never echo the streamed source archive or SSH target.
         detail = f"\\nRemote Docker build diagnostics:\\n{safe_tail}" if safe_tail else ""
         raise RuntimeError(
             f"NAS Docker build failed (git archive={archive_status}, remote build={build.returncode}){detail}"
