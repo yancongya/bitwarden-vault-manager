@@ -37,13 +37,14 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Runtime deps only
-RUN npm ci --omit=dev --no-audit --no-fund
+# Start from the lockfile-installed dependency tree, then remove build-only tools.
+COPY package.json package-lock.json ./
+COPY --from=deps /build/node_modules ./node_modules
+RUN npm prune --omit=dev --no-audit --no-fund
 # Built web assets
 COPY --from=builder /app/dist ./dist
 # Server + CLI
 COPY server.js ./server.js
-COPY package.json ./
 COPY agent-harness ./agent-harness
 # Source needed for CLI (crypto engine lives in src/)
 COPY src ./src
