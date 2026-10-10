@@ -232,11 +232,11 @@ printf '%s' "$SECRET" | ./bitwardenagents credential set \
 
 ### 一键部署到 NAS
 
-仓库自带 `build-and-deploy.sh plan`，用于查看适配器 dry-run 与发布身份。实际部署由 Agent Ops 服务目录路由：`agent-ops update bwvault` 预演，只有用户明确授权后才加 `--yes` 执行登记的 `scripts/deploy_nas.py`。适配器要求工作树干净，保留 `/vol1/1000/services/data/bwvault:/data`，验收健康状态与镜像标签，并在候选容器验收失败时尝试恢复先前容器。Agent Ops 当前未登记 bwvault 的独立手动 rollback 能力。
+仓库自带 `build-and-deploy.sh plan`，用于查看适配器 dry-run 与发布身份。实际部署由 Agent Ops 服务目录路由：`agent-ops update bwvault` 预演，只有用户明确授权后才加 `--yes` 执行登记的 `scripts/deploy_nas.py`。适配器要求工作树干净，将 Git 源码归档流式发送到 NAS，并只在 NAS 上执行 Docker 构建；Mac 不需要 Docker daemon、OrbStack 或本地容器。它保留 `/vol1/1000/services/data/bwvault:/data`，验收健康状态与镜像标签，并在候选容器验收失败时尝试恢复先前容器。Agent Ops 当前未登记 bwvault 的独立手动 rollback 能力。
 
 ```bash
 ./build-and-deploy.sh plan
-# 实际部署走 Agent Ops 登记的适配器；先预演，再由用户明确授权后执行：
+# 实际构建与部署都在 NAS Docker 上，由 Agent Ops 登记的适配器执行；先预演，再由用户明确授权后执行：
 agent-ops update bwvault
 agent-ops update bwvault --yes
 

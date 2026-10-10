@@ -41,6 +41,7 @@ printf '%s' "$SECRET" | bwvault credential set --alias svc.api.token --username 
 ## 持久会话
 
 - CLI 和 NAS Web 服务复用 `/data/session`。新版 API key 凭据由 `/data/session/agent-key` 保护，可在 token 过期和容器重启后自动续期。
+- NAS 部署通过 Agent Ops 登记的 `scripts/deploy_nas.py` 适配器；源码归档从 Mac 流式传到 NAS，Docker 镜像只在 NAS 构建。本机不启动 Docker、OrbStack 或容器。
 - `auth status --json` 是首选的无密值检查。写入或同步返回 `401` 时先重试一次；仍失败时检查 API key 凭据是否为 `version: 2` 且 `keySource: agent-key`，只报告版本与状态。
 - 仅旧版 `version: 1` 可能需要在私密终端完成一次 PIN 迁移。不得把 PIN 放在命令参数、聊天或 HTTP 请求示例中。
 - 每次读取会解密整个库，避免在高频 hook、循环或每次对话中运行 `credential get`；只在任务实际需要时调用。

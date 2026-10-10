@@ -66,6 +66,8 @@ def build_plan(root: Path = ROOT) -> dict[str, object]:
         "dirtyPaths": dirty_paths,
         "image": f"bwvault:{release}" if release else None,
         "platform": "linux/amd64",
+        "buildLocation": "nas",
+        "localDockerRequired": False,
         "service": CONTAINER,
         "preservedDataMount": f"{DATA_DIR}:/data",
         "healthAcceptance": "Docker healthcheck=healthy and running image tag matches source revision",
@@ -81,6 +83,7 @@ failed="${container}-failed-${stamp}"
 had_previous=0
 
 sudo -n test -d "$data_dir" || { echo 'Refusing deploy: persistent data directory is missing.' >&2; exit 19; }
+sudo -n docker image inspect "$image" >/dev/null 2>&1 || { echo 'Refusing deploy: candidate image is missing.' >&2; exit 22; }
 if sudo -n docker ps -a --format '{{.Names}}' | grep -qx "$container"; then
   actual_data=$(sudo -n docker inspect --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}' "$container")
   [ "$actual_data" = "$data_dir" ] || { echo 'Refusing deploy: existing /data bind mount does not match catalog.' >&2; exit 20; }
@@ -146,20 +149,30 @@ def apply_plan(plan: dict[str, object], *, yes: bool) -> dict[str, object]:
         raise RuntimeError("部署被工作区保护规则阻止")
     if not yes:
         raise RuntimeError("执行需要显式传 --yes")
+    current = build_plan()
+    if current.get("blocked") or current.get("sourceRevision") != plan.get("sourceRevision"):
+        raise RuntimeError("部署计划已过期或工作区已变化；请重新预演")
     target = _nas_ssh_target()
     image = str(plan["image"])
-    build = _run(["docker", "buildx", "build", "--platform", "linux/amd64", "--load", "-t", image, "."])
-    if build.returncode:
-        raise RuntimeError(build.stderr.strip() or "Docker image build failed")
+    if image != current.get("image") or not re.fullmatch(r"bwvault:release-[0-9a-f]{16}", image):
+        raise RuntimeError("部署镜像与当前源码计划不匹配")
 
-    with subprocess.Popen(["docker", "save", image], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as source:
+    with subprocess.Popen(
+        ["git", "-C", str(ROOT), "archive", "--format=tar", str(current["sourceRevision"])],
+        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    ) as source:
         assert source.stdout is not None
-        load = subprocess.run(_ssh_argv(target, "sudo -n docker load"), stdin=source.stdout, text=False, capture_output=True, check=False)
+        build_command = "sudo -n docker build --platform linux/amd64 --tag " + shlex.quote(image) + " -"
+        build = subprocess.run(_ssh_argv(target, build_command), stdin=source.stdout,
+                               text=False, capture_output=True, check=False)
         source.stdout.close()
-        save_stderr = source.stderr.read().decode(errors="replace") if source.stderr else ""
-        save_status = source.wait()
-    if save_status or load.returncode:
-        raise RuntimeError((load.stderr.decode(errors="replace") or save_stderr or "Image transfer/load failed").strip())
+        if source.stderr:
+            source.stderr.read()
+        archive_status = source.wait()
+    if archive_status or build.returncode:
+        # Build output can contain source paths or package diagnostics; keep it out of
+        # Agent Ops receipts and logs. The exit code is enough to direct investigation.
+        raise RuntimeError(f"NAS Docker build failed (git archive={archive_status}, remote build={build.returncode})")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     command = "bash -s -- " + " ".join(shlex.quote(value) for value in (CONTAINER, image, DATA_DIR, stamp))

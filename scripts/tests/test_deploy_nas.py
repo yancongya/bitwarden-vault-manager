@@ -28,6 +28,8 @@ class DeploymentPlanTests(unittest.TestCase):
         self.assertFalse(plan["blocked"])
         self.assertEqual(plan["image"], f"bwvault:release-{plan['sourceRevision'][:16]}")
         self.assertEqual(plan["platform"], "linux/amd64")
+        self.assertEqual(plan["buildLocation"], "nas")
+        self.assertFalse(plan["localDockerRequired"])
         self.assertEqual(plan["preservedDataMount"], "/vol1/1000/services/data/bwvault:/data")
 
     def test_dirty_worktree_blocks_deployment(self):
@@ -56,16 +58,17 @@ class DeploymentPlanTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(deploy_nas, "RUNTIME_CONFIG_PATH", Path(directory) / "runtime.json"), \
              patch.dict(deploy_nas.os.environ, {}, clear=True), \
+             patch.object(deploy_nas, "build_plan", return_value=plan), \
              patch.object(deploy_nas, "_run") as run:
             with self.assertRaisesRegex(RuntimeError, "nasSshTarget"):
                 deploy_nas.apply_plan(plan, yes=True)
         run.assert_not_called()
 
     def test_ssh_argv_is_noninteractive_and_uses_validated_destination(self):
-        argv = deploy_nas._ssh_argv("tycon@192.168.31.110", "sudo -n docker load")
+        argv = deploy_nas._ssh_argv("tycon@192.168.31.110", "sudo -n docker build --platform linux/amd64 -t bwvault:release-0123456789abcdef -")
         self.assertEqual(argv[0], "ssh")
         self.assertIn("BatchMode=yes", argv)
-        self.assertEqual(argv[-2:], ["tycon@192.168.31.110", "sudo -n docker load"])
+        self.assertEqual(argv[-2:], ["tycon@192.168.31.110", "sudo -n docker build --platform linux/amd64 -t bwvault:release-0123456789abcdef -"])
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(deploy_nas, "RUNTIME_CONFIG_PATH", Path(directory) / "runtime.json"), \
              patch.dict(deploy_nas.os.environ, {}, clear=True):
@@ -74,10 +77,10 @@ class DeploymentPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "nasSshTarget"):
             deploy_nas._ssh_argv("-oProxyCommand=id", "true")
 
-    def test_apply_streams_image_and_script_through_key_only_ssh(self):
+    def test_apply_streams_git_source_to_nas_build_and_deploy_without_local_docker(self):
         class FakeSource:
-            stdout = io.BytesIO(b"image-stream")
-            stderr = None
+            stdout = io.BytesIO(b"source-archive")
+            stderr = io.BytesIO()
             def __enter__(self): return self
             def __exit__(self, *args): return False
             def wait(self): return 0
@@ -90,11 +93,12 @@ class DeploymentPlanTests(unittest.TestCase):
             calls.append(entry)
             return subprocess.CompletedProcess(argv, 0, stdout=b"" if not kwargs.get("text") else "accepted\n", stderr=b"")
 
-        plan = {"blocked": False, "image": "bwvault:release-0123456789abcdef", "sourceRevision": "0123456789abcdef"}
+        revision = "0123456789abcdef0123456789abcdef01234567"
+        plan = {"blocked": False, "image": f"bwvault:release-{revision[:16]}", "sourceRevision": revision}
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(deploy_nas, "RUNTIME_CONFIG_PATH", Path(directory) / "runtime.json"), \
              patch.dict(deploy_nas.os.environ, {}, clear=True), \
-             patch.object(deploy_nas, "_run", return_value=subprocess.CompletedProcess([], 0, "", "")), \
+             patch.object(deploy_nas, "build_plan", return_value=plan), \
              patch.object(deploy_nas.subprocess, "Popen", return_value=FakeSource()), \
              patch.object(deploy_nas.subprocess, "run", side_effect=fake_run):
             deploy_nas.RUNTIME_CONFIG_PATH.write_text(json.dumps({"nasSshTarget": "tycon@192.168.31.110"}))
@@ -102,7 +106,10 @@ class DeploymentPlanTests(unittest.TestCase):
 
         self.assertEqual(len(calls), 2)
         self.assertTrue(all(call["argv"][0] == "ssh" and "BatchMode=yes" in call["argv"] for call in calls))
-        self.assertEqual(calls[0]["stdinData"], b"image-stream")
+        self.assertEqual(calls[0]["stdinData"], b"source-archive")
+        self.assertIn("docker build --platform linux/amd64", calls[0]["argv"][-1])
+        self.assertFalse(any("docker" in arg and arg != calls[0]["argv"][-1]
+                             for call in calls for arg in call["argv"]))
         self.assertEqual(calls[1]["kwargs"]["input"], deploy_nas.REMOTE_DEPLOY)
         self.assertEqual(result["output"], "accepted")
 

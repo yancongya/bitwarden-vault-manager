@@ -65,3 +65,9 @@
 - NAS 侧先验证现有 `/data` bind mount 与固定数据目录一致。新容器必须通过 Docker healthcheck；失败时保留失败容器并尝试恢复先前容器，不删除容器或数据卷。
 - Agent Ops 已登记该更新适配器。提交 `35790bb20a773c0b4a289ce35ae041794293d1aa` 已推送并部署；NAS 容器镜像为 `bwvault:release-35790bb20a773c0b`，运行和 Docker healthcheck 均为 healthy，`/data` 仍绑定到 `/vol1/1000/services/data/bwvault`，HTTPS 首页返回 200。
 - 历史部署曾使用 `infra-ops` SSH wrapper，并修复过其输入转发缺陷；当前部署入口已改为直连系统 SSH，仍以独立回归验证镜像流和远端脚本的标准输入。
+
+## 2026-10-10 NAS 原生构建部署入口
+
+- 更新适配器不再调用 Mac 本地 Docker Buildx；它从干净 Git revision 创建源码归档并通过 Agent Ops 配置的 SSH 目标流式发送给 NAS。
+- 镜像构建在 NAS 的 Docker Engine 上完成，部署前验证候选镜像存在；保留既有 `/data` bind mount、健康检查和旧容器恢复逻辑。
+- 回归覆盖源码流、远端构建命令、无本地 Docker 调用、脏工作树阻断和健康验收失败恢复；自动化测试通过不等于 NAS 实际部署验收。
